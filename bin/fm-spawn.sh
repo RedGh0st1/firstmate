@@ -482,7 +482,7 @@ spawn_remote_secondmate() {
     harness=$("$FM_ROOT/bin/fm-harness.sh" secondmate)
   fi
   case "$harness" in
-    claude|codex|opencode|pi|pi-signed|grok|kimi|cursor) ;;
+    claude|codex|opencode|pi|pi-signed|grok|kimi|cursor|hermes) ;;
     *)
       fm_lock_release "$registry_lock" || true
       fm_lock_release "$SPAWN_TASK_LOCK" || true
@@ -1166,7 +1166,7 @@ if [ "$RELAUNCH" -eq 1 ]; then
   }
 elif [ "$KIND" = secondmate ]; then
   case "${POS[1]:-}" in
-    ''|claude|codex|opencode|pi|pi-signed|grok|kimi|cursor|muse)
+    ''|claude|codex|opencode|pi|pi-signed|grok|kimi|cursor|muse|hermes)
       ARG3=${POS[1]:-}
       ;;
     *' '*)
@@ -1296,6 +1296,11 @@ launch_template() {
     # written below. Nothing to place in the template for it.
     # codex, opencode, and kimi are also markerless and share this inherited-marker hazard; changing their verified launch boundaries belongs in follow-up work.
     muse) printf '%s' 'env -u CLAUDECODE -u PI_CODING_AGENT -u GROK_AGENT -u FM_PI_HARNESS XDG_CONFIG_HOME=__MUSECONFIG__ XDG_DATA_HOME=__MUSEDATA__ MUSE_EXPERIMENTAL_FOREIGN_PERSONAL_CONTEXT_KILL=on __MUSEBIN__ --yolo __MODELFLAG____EFFORTFLAG__"$(__OPINPUT__ encode launch-brief < __BRIEF__)"' ;;
+    # Hermes loads the repository's project plugin when explicitly enabled. The
+    # plugin owns watcher re-arm and bounded turn-end follow-up through Hermes'
+    # documented session hooks. A bare interactive session receives the brief
+    # after startup through the common typed submit path below.
+    hermes) printf '%s' 'env -u CLAUDECODE -u PI_CODING_AGENT -u GROK_AGENT -u FM_PI_HARNESS HERMES_AGENT=true HERMES_ENABLE_PROJECT_PLUGINS=true hermes __MODELFLAG__--yolo --accept-hooks' ;;
     *) return 1 ;;
   esac
 }
@@ -1481,7 +1486,7 @@ model_flag_for_harness() {
   local harness=$1 model=$2
   [ -n "$model" ] && [ "$model" != default ] || return 0
   case "$harness" in
-    claude|codex|opencode|pi|pi-signed|grok|kimi|cursor|muse)
+    claude|codex|opencode|pi|pi-signed|grok|kimi|cursor|muse|hermes)
       printf -- '--model %s ' "$(shell_quote "$model")"
       ;;
   esac
@@ -2403,6 +2408,27 @@ kimi_spawn_fail() {  # <detail>
   echo "error: $1; inspect window $T" >&2
 }
 
+# hermes_wait_for_ready: the launched Hermes TUI is ready for the typed brief
+# pointer once its startup render has settled (two identical consecutive
+# captures) or the shared classifier positively proves an empty composer,
+# whichever comes first. The settle check needs no Hermes composer shape, so it
+# does not stall the full budget when the classifier cannot yet name that shape.
+# Returns non-zero if neither signal is seen within the bound; the caller then
+# proceeds best-effort.
+hermes_wait_for_ready() {
+  local i=0 max=${FM_HERMES_READY_POLLS:-16} interval=${FM_HERMES_POLL_INTERVAL:-0.5}
+  local prev='' cur
+  while [ "$i" -lt "$max" ]; do
+    [ "$(fm_backend_composer_state "$BACKEND" "$T" "$W" 2>/dev/null)" != empty ] || return 0
+    cur=$(fm_backend_capture "$BACKEND" "$T" 40 "$W" 2>/dev/null || true)
+    [ -z "$cur" ] || [ "$cur" != "$prev" ] || return 0
+    prev=$cur
+    i=$((i + 1))
+    [ "$i" -ge "$max" ] || sleep "$interval"
+  done
+  return 1
+}
+
 if [ "$RELAUNCH" -eq 1 ]; then
   # No worktree is acquired: the recorded one is reused as-is. What must be
   # proven instead is that the adopted endpoint's shell is actually sitting in
@@ -2971,9 +2997,13 @@ case "$HARNESS" in
 esac
 LAUNCH=${LAUNCH//__WORKTREE__/$sq_worktree}
 case "$HARNESS" in
-  claude|codex|opencode|pi|pi-signed|grok|kimi|muse)
+  claude|codex|opencode|pi|pi-signed|grok|kimi|muse|hermes)
     LAUNCH="env -u CURSOR_AGENT -u CURSOR_INVOKED_AS $LAUNCH"
     ;;
+esac
+case "$HARNESS" in
+  hermes) ;;
+  *) LAUNCH="env -u HERMES_AGENT $LAUNCH" ;;
 esac
 # Crewmate panes are created by a long-lived tmux/herdr daemon that does not
 # inherit firstmate's current environment, so a bare `claude` in the pane falls
@@ -3086,6 +3116,30 @@ if [ "$HARNESS" = kimi ]; then
     kimi_spawn_fail "kimi brief pointer delivery was not confirmed"
     exit 1
   fi
+fi
+if [ "$HARNESS" = hermes ]; then
+  hermes_wait_for_ready \
+    || echo "warning: Hermes composer was not classified ready within the launch budget; delivering the brief pointer best-effort; inspect window $T if the worker never starts" >&2
+  HERMES_POINTER="Read the brief at $BRIEF_REAL and follow it exactly."
+  HERMES_SUBMIT_RETRIES=${FM_HERMES_SUBMIT_RETRIES:-3}
+  HERMES_SUBMIT_SLEEP=${FM_HERMES_SUBMIT_SLEEP:-1}
+  HERMES_SUBMIT_SETTLE=${FM_HERMES_SUBMIT_SETTLE:-1}
+  if ! HERMES_SUBMIT_VERDICT=$(fm_backend_send_text_submit \
+      "$BACKEND" "$T" "$HERMES_POINTER" "$HERMES_SUBMIT_RETRIES" \
+      "$HERMES_SUBMIT_SLEEP" "$HERMES_SUBMIT_SETTLE" "$W"); then
+    echo "error: Hermes brief pointer could not be submitted; inspect window $T" >&2
+    exit 1
+  fi
+  case "$HERMES_SUBMIT_VERDICT" in
+    empty) ;;
+    unknown)
+      echo "warning: Hermes brief pointer delivery is unconfirmed (submit verdict=unknown; the shared composer classifier does not yet recognise the Hermes composer shape); inspect window $T to confirm the worker started on its brief" >&2
+      ;;
+    *)
+      echo "error: Hermes brief pointer was not delivered (verdict=${HERMES_SUBMIT_VERDICT:-unknown}; text is still in the composer); inspect window $T" >&2
+      exit 1
+      ;;
+  esac
 fi
 if [ "$KIND" = secondmate ] && [ "${FM_SKIP_SECONDMATE_INHERIT:-0}" != 1 ]; then
   if ! fm_config_reread_discard_pending "$PROJ_ABS" "$ID" "$FM_HOME"; then

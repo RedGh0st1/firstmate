@@ -58,7 +58,7 @@ Full detail on every feature lives in [docs/architecture.md](docs/architecture.m
 
 ### Requirements
 
-- A verified primary agent harness: Claude Code, Grok, Pi, `pi-signed`, Codex, OpenCode, or Cursor Agent CLI.
+- A verified primary agent harness: Claude Code, Grok, Pi, `pi-signed`, Codex, OpenCode, Cursor Agent CLI, or Hermes.
 - Git and the GitHub CLI, authenticated through `gh auth login`.
 - The CLI and dependencies for your selected runtime backend; tmux is the reference default.
 
@@ -76,6 +76,9 @@ Codex and OpenCode are also verified and supported as primary harnesses; Codex u
 Cursor Agent CLI is verified as a primary too, using a tracked project-scope `.cursor/hooks.json` whose `stop` hook parks on the watcher between turns, closest in shape to Claude Code's.
 Launch it with `--trust`, or none of its project hooks load; it also has no turn-end hook in headless `cursor-agent -p`, so run the primary session interactively.
 
+Hermes is wired as a primary too, using the tracked `.hermes/plugins/firstmate/` project plugin for watcher re-arm and re-wake; because Hermes has no native blocking turn-end hook its guard path is a passive bounded follow-up, so it carries a similar supervision tradeoff to OpenCode and Pi.
+Unlike the harnesses above it has not completed a supervised live trial, so its live smoke test remains the open verification boundary described in [docs/configuration.md](docs/configuration.md#harness-support).
+
 ### Install and launch
 
 ```sh
@@ -85,6 +88,15 @@ cd firstmate
 ```
 
 Then launch one of the co-primary harnesses; AGENTS.md takes over from there:
+
+**Hermes**
+
+```sh
+HERMES_ENABLE_PROJECT_PLUGINS=true hermes --accept-hooks
+```
+
+Hermes uses the tracked project plugin under `.hermes/plugins/firstmate/` for watcher re-arm, bounded re-wake, and the passive turn-end guard.
+Hermes has no native blocking turn-end hook, so the plugin queues at most one bounded follow-up when the shared guard reports a supervision lapse.
 
 **Claude Code**
 
@@ -170,12 +182,12 @@ Full architecture - the supervision engine, worktree isolation, secondmates, dis
 Firstmate ships these user-invocable built-in skills.
 Claude and grok use the slash form shown here; codex uses the same names with `$`, such as `$afk`.
 
-| Skill              | What it does                                                                                                                                  |
-| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/afk`             | Enter away-mode supervision: the sub-supervisor self-handles routine notifications in bash, escalates captain-relevant events and bounded declared-external-wait rechecks as batched digests, and actively alerts if delivery gets stuck while you step away |
-| `/ahoy`            | Recap visible session events since the prior real captain message plus visibly unanswered captain decisions, then guide the captain through any open decisions one at a time in agent-judged impact order; fall back to Bearings when invoked as the session's first real captain message |
-| `/bearings`        | Generate a concise four-section chat digest from bounded local fleet and registered-secondmate state; use `/bearings file` to also replace today's dated report in `data/`, and add `include PRs` when live PR enrichment is wanted |
-| `/updatefirstmate` | Self-update the running firstmate and its secondmates to the latest from origin with fast-forward-only pulls, then re-read instructions and nudge secondmates |
+| Skill              | What it does                                                                                                                                                                                                                                                                                                                |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/afk`             | Enter away-mode supervision: the sub-supervisor self-handles routine notifications in bash, escalates captain-relevant events and bounded declared-external-wait rechecks as batched digests, and actively alerts if delivery gets stuck while you step away                                                                |
+| `/ahoy`            | Recap visible session events since the prior real captain message plus visibly unanswered captain decisions, then guide the captain through any open decisions one at a time in agent-judged impact order; fall back to Bearings when invoked as the session's first real captain message                                   |
+| `/bearings`        | Generate a concise four-section chat digest from bounded local fleet and registered-secondmate state; use `/bearings file` to also replace today's dated report in `data/`, and add `include PRs` when live PR enrichment is wanted                                                                                         |
+| `/updatefirstmate` | Self-update the running firstmate and its secondmates to the latest from origin with fast-forward-only pulls, then re-read instructions and nudge secondmates                                                                                                                                                               |
 | `/stow`            | Sweep the session for uncaptured durable knowledge, persist the open work records this session knows are unfiled or now wrong, curate tiered startup memory with decay and cold archival, enforce each home's budget or surface the required decision, cascade to registered second mates, and report what is safe to reset |
 
 Bearings invocation examples:
