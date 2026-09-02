@@ -64,12 +64,19 @@ def _firstmate_root(root: Path) -> bool:
     return (root / "AGENTS.md").is_file() and (root / "bin" / "fm-watch-arm.sh").is_file()
 
 
+_WATCHER_WAKE_INSTRUCTION = (
+    "WATCHER FIRED - drain queued wakes with bin/fm-wake-drain.sh and handle the "
+    "reported wake. Watcher continuity is plugin-owned."
+)
+
+
 def _watcher_message(root: Path, wake: str) -> str | None:
+    body = "%s\n\n%s" % (_WATCHER_WAKE_INSTRUCTION, wake)
     encoded = subprocess.run(
         [str(root / "bin" / "fm-operational-input.sh"), "encode", "watcher"],
         cwd=root,
         env=_environment(root),
-        input=wake + "\n",
+        input=body + "\n",
         text=True,
         capture_output=True,
         check=False,
