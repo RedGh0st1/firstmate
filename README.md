@@ -76,7 +76,8 @@ Codex and OpenCode are also verified and supported as primary harnesses; Codex u
 Cursor Agent CLI is verified as a primary too, using a tracked project-scope `.cursor/hooks.json` whose `stop` hook parks on the watcher between turns, closest in shape to Claude Code's.
 Launch it with `--trust`, or none of its project hooks load; it also has no turn-end hook in headless `cursor-agent -p`, so run the primary session interactively.
 
-Hermes is verified as a primary too, using the tracked `.hermes/plugins/firstmate/` project plugin for watcher re-arm and re-wake; because Hermes has no native blocking turn-end hook its guard path is a passive bounded follow-up, so it carries a similar supervision tradeoff to OpenCode and Pi.
+Hermes is wired as a primary too, using the tracked `.hermes/plugins/firstmate/` project plugin for watcher re-arm and re-wake; because Hermes has no native blocking turn-end hook its guard path is a passive bounded follow-up, so it carries a similar supervision tradeoff to OpenCode and Pi.
+Unlike the harnesses above it has not completed a supervised live trial, so its live smoke test remains the open verification boundary described in [docs/configuration.md](docs/configuration.md#harness-support).
 
 ### Install and launch
 
