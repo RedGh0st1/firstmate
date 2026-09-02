@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import atexit
 import json
 import logging
 import os
@@ -13,6 +14,8 @@ from pathlib import Path
 LOGGER = logging.getLogger("firstmate.hermes")
 _FOLLOWUP_LOCK = threading.Lock()
 _FOLLOWUP_SENT = False
+_ARM_LOCK = threading.Lock()
+_ARM_PROC: subprocess.Popen | None = None
 
 
 def _root() -> Path:
@@ -31,18 +34,38 @@ def _firstmate_root(root: Path) -> bool:
 
 
 def _arm(root: Path) -> None:
+    global _ARM_PROC
+    with _ARM_LOCK:
+        if _ARM_PROC is not None and _ARM_PROC.poll() is None:
+            return
+        try:
+            _ARM_PROC = subprocess.Popen(
+                [str(root / "bin" / "fm-watch-arm.sh")],
+                cwd=root,
+                env=_environment(root),
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                start_new_session=True,
+            )
+        except OSError as exc:
+            LOGGER.error("Firstmate Hermes watcher arm failed: %s", exc)
+
+
+def _disarm() -> None:
+    global _ARM_PROC
+    with _ARM_LOCK:
+        proc, _ARM_PROC = _ARM_PROC, None
+    if proc is None or proc.poll() is not None:
+        return
+    proc.terminate()
     try:
-        subprocess.Popen(
-            [str(root / "bin" / "fm-watch-arm.sh")],
-            cwd=root,
-            env=_environment(root),
-            stdin=subprocess.DEVNULL,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            start_new_session=True,
-        )
-    except OSError as exc:
-        LOGGER.error("Firstmate Hermes watcher arm failed: %s", exc)
+        proc.wait(timeout=5)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+
+
+atexit.register(_disarm)
 
 
 def _guard(root: Path) -> bool:

@@ -50,6 +50,12 @@ detect_own() {
   # CURSOR_AGENT=1 is set for the child/tool processes this script runs as.
   [ "${CURSOR_AGENT:-}" = "1" ] && { echo cursor; return; }
   [ "${CURSOR_INVOKED_AS:-}" = "cursor-agent" ] && { echo cursor; return; }
+  # Hermes publishes HERMES_AGENT=true as its own identity marker but does NOT
+  # clear an inherited CLAUDECODE/PI_CODING_AGENT/GROK_AGENT, so a Hermes session
+  # started by hand from one of those shells carries both. The Hermes marker is
+  # unambiguous when present, so it is ordered ahead of those fast-paths for the
+  # same reason cursor is ordered ahead of claude just below.
+  [ "${HERMES_AGENT:-}" = "true" ] && { echo hermes; return; }
   [ "${CLAUDECODE:-}" = "1" ] && { echo claude; return; }
   if [ "${PI_CODING_AGENT:-}" = "true" ]; then
     if [ "${FM_PI_HARNESS:-}" = pi-signed ]; then echo pi-signed; else echo pi; fi
@@ -65,7 +71,6 @@ detect_own() {
   # identified, and any rule that must be RELIABLE under grok has to test the hook
   # markers too (see .claude/settings.json Stop entries, docs/turnend-guard.md).
   [ "${GROK_AGENT:-}" = "1" ] && { echo grok; return; }
-  [ "${HERMES_AGENT:-}" = "true" ] && { echo hermes; return; }
   # muse (Muse Code) publishes no harness-identity marker of its own. The only
   # MUSE_* variable it is documented to hand a child is MUSE_CURRENT_SESSION_LOG,
   # a per-session log PATH rather than an identity, and its export to tool
