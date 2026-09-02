@@ -2408,6 +2408,20 @@ kimi_spawn_fail() {  # <detail>
   echo "error: $1; inspect window $T" >&2
 }
 
+# hermes_wait_for_ready: poll the launched Hermes TUI until its composer is
+# positively proven empty (the same readiness signal the away-mode daemon's
+# inject path requires before typing), so the brief pointer is not typed into a
+# composer that is still loading project plugins or sitting on a trust prompt.
+hermes_wait_for_ready() {
+  local i=0 max=${FM_HERMES_READY_POLLS:-60} interval=${FM_HERMES_POLL_INTERVAL:-0.5}
+  while [ "$i" -lt "$max" ]; do
+    [ "$(fm_backend_composer_state "$BACKEND" "$T" "$W" 2>/dev/null)" != empty ] || return 0
+    i=$((i + 1))
+    [ "$i" -ge "$max" ] || sleep "$interval"
+  done
+  return 1
+}
+
 if [ "$RELAUNCH" -eq 1 ]; then
   # No worktree is acquired: the recorded one is reused as-is. What must be
   # proven instead is that the adopted endpoint's shell is actually sitting in
@@ -3097,9 +3111,22 @@ if [ "$HARNESS" = kimi ]; then
   fi
 fi
 if [ "$HARNESS" = hermes ]; then
+  if ! hermes_wait_for_ready; then
+    echo "error: Hermes did not present a ready composer before brief delivery; inspect window $T" >&2
+    exit 1
+  fi
   HERMES_POINTER="Read the brief at $BRIEF_REAL and follow it exactly."
-  if ! fm_backend_send_text_submit "$BACKEND" "$T" "$HERMES_POINTER" 3 1 1 "$W"; then
-    echo "error: Hermes brief pointer could not be submitted" >&2
+  HERMES_SUBMIT_RETRIES=${FM_HERMES_SUBMIT_RETRIES:-3}
+  HERMES_SUBMIT_SLEEP=${FM_HERMES_SUBMIT_SLEEP:-1}
+  HERMES_SUBMIT_SETTLE=${FM_HERMES_SUBMIT_SETTLE:-1}
+  if ! HERMES_SUBMIT_VERDICT=$(fm_backend_send_text_submit \
+      "$BACKEND" "$T" "$HERMES_POINTER" "$HERMES_SUBMIT_RETRIES" \
+      "$HERMES_SUBMIT_SLEEP" "$HERMES_SUBMIT_SETTLE" "$W"); then
+    echo "error: Hermes brief pointer could not be submitted; inspect window $T" >&2
+    exit 1
+  fi
+  if [ "$HERMES_SUBMIT_VERDICT" != empty ]; then
+    echo "error: Hermes brief pointer delivery was not confirmed (verdict=${HERMES_SUBMIT_VERDICT:-unknown}; text may be sitting in the composer); inspect window $T" >&2
     exit 1
   fi
 fi

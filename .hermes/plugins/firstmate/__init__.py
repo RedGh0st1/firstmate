@@ -9,6 +9,7 @@ import os
 import re
 import subprocess
 import threading
+import time
 from pathlib import Path
 
 
@@ -18,7 +19,34 @@ _FOLLOWUP_SENT = False
 _ARM_LOCK = threading.Lock()
 _ARM_PROC: subprocess.Popen[str] | None = None
 _SHUTTING_DOWN = False
-_ACTIONABLE_WAKE = re.compile(r"^(?:signal|stale|check|heartbeat):")
+_ARM_RETRY_FAILURES = 0
+_INJECT_LOCK = threading.Lock()
+_ACTIONABLE_WAKE = re.compile(r"^(?:signal:|stale:|check:|heartbeat($|:))")
+
+
+def _positive_int(name: str, fallback: int) -> int:
+    try:
+        value = int(os.environ[name])
+    except (KeyError, ValueError):
+        return fallback
+    return value if value > 0 else fallback
+
+
+_REARM_RETRY_LIMIT = _positive_int("FM_WATCH_REARM_RETRY_LIMIT", 5)
+_REARM_RETRY_BASE_S = _positive_int("FM_WATCH_REARM_RETRY_BASE_MS", 250) / 1000.0
+_REARM_RETRY_MAX_S = _positive_int("FM_WATCH_REARM_RETRY_MAX_MS", 4000) / 1000.0
+
+
+def _retry_delay(attempt: int) -> float:
+    return min(_REARM_RETRY_MAX_S, _REARM_RETRY_BASE_S * 2 ** max(0, attempt - 1))
+
+
+def _inject(ctx, message: str) -> None:
+    with _INJECT_LOCK:
+        try:
+            ctx.inject_message(message, role="user")
+        except Exception as exc:
+            LOGGER.error("Firstmate Hermes message injection failed: %s", exc)
 
 
 def _root() -> Path:
@@ -61,19 +89,40 @@ def _monitor_arm(root: Path, ctx, proc: subprocess.Popen[str]) -> None:
                 wake = line
                 message = _watcher_message(root, line)
                 if message is not None:
-                    try:
-                        ctx.inject_message(message, role="user")
-                    except Exception as exc:
-                        LOGGER.error("Firstmate Hermes watcher wake injection failed: %s", exc)
+                    _inject(ctx, message)
     returncode = proc.wait()
     with _ARM_LOCK:
         if _ARM_PROC is proc:
             globals()["_ARM_PROC"] = None
         shutting_down = _SHUTTING_DOWN
+        if returncode == 0 or wake is not None:
+            globals()["_ARM_RETRY_FAILURES"] = 0
+            failures = 0
+        else:
+            failures = _ARM_RETRY_FAILURES + 1
+            globals()["_ARM_RETRY_FAILURES"] = failures
     if shutting_down:
         return
-    if returncode != 0 and wake is None:
-        LOGGER.warning("Firstmate Hermes watcher arm exited with status %s", returncode)
+    if failures:
+        LOGGER.warning(
+            "Firstmate Hermes watcher arm exited with status %s (re-arm attempt %s/%s)",
+            returncode,
+            failures,
+            _REARM_RETRY_LIMIT,
+        )
+        if failures > _REARM_RETRY_LIMIT:
+            message = _watcher_message(
+                root,
+                "FAILED - firstmate watcher re-arm failed %d consecutive times; "
+                "supervision is down until the watcher is re-armed" % _REARM_RETRY_LIMIT,
+            )
+            if message is not None:
+                _inject(ctx, message)
+            return
+        time.sleep(_retry_delay(failures))
+        with _ARM_LOCK:
+            if _SHUTTING_DOWN:
+                return
     _arm(root, ctx)
 
 
@@ -187,6 +236,8 @@ def register(ctx) -> None:
 
     def on_session_start(**kwargs) -> None:
         del kwargs
+        with _ARM_LOCK:
+            globals()["_ARM_RETRY_FAILURES"] = 0
         _arm(root, ctx)
 
     def on_session_end(**kwargs) -> None:
@@ -201,7 +252,7 @@ def register(ctx) -> None:
             _FOLLOWUP_SENT = True
         message = _followup(root)
         if message is not None:
-            ctx.inject_message(message, role="user")
+            _inject(ctx, message)
 
     ctx.register_hook("on_stream_start", on_stream_start)
     ctx.register_hook("on_session_start", on_session_start)
