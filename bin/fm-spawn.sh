@@ -1300,7 +1300,7 @@ launch_template() {
     # plugin owns watcher re-arm and bounded turn-end follow-up through Hermes'
     # documented session hooks. A bare interactive session receives the brief
     # after startup through the common typed submit path below.
-    hermes) printf '%s' 'HERMES_AGENT=true HERMES_ENABLE_PROJECT_PLUGINS=true hermes --yolo --accept-hooks' ;;
+    hermes) printf '%s' 'env -u CLAUDECODE -u PI_CODING_AGENT -u GROK_AGENT -u FM_PI_HARNESS HERMES_AGENT=true HERMES_ENABLE_PROJECT_PLUGINS=true hermes --yolo --accept-hooks' ;;
     *) return 1 ;;
   esac
 }

@@ -6,6 +6,7 @@ import atexit
 import json
 import logging
 import os
+import re
 import subprocess
 import threading
 from pathlib import Path
@@ -15,7 +16,9 @@ LOGGER = logging.getLogger("firstmate.hermes")
 _FOLLOWUP_LOCK = threading.Lock()
 _FOLLOWUP_SENT = False
 _ARM_LOCK = threading.Lock()
-_ARM_PROC: subprocess.Popen | None = None
+_ARM_PROC: subprocess.Popen[str] | None = None
+_SHUTTING_DOWN = False
+_ACTIONABLE_WAKE = re.compile(r"^(?:signal|stale|check|heartbeat):")
 
 
 def _root() -> Path:
@@ -33,9 +36,52 @@ def _firstmate_root(root: Path) -> bool:
     return (root / "AGENTS.md").is_file() and (root / "bin" / "fm-watch-arm.sh").is_file()
 
 
-def _arm(root: Path) -> None:
+def _watcher_message(root: Path, wake: str) -> str | None:
+    encoded = subprocess.run(
+        [str(root / "bin" / "fm-operational-input.sh"), "encode", "watcher"],
+        cwd=root,
+        env=_environment(root),
+        input=wake + "\n",
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    if encoded.returncode != 0 or not encoded.stdout.strip():
+        LOGGER.error("Firstmate Hermes watcher wake could not be encoded")
+        return None
+    return encoded.stdout.strip()
+
+
+def _monitor_arm(root: Path, ctx, proc: subprocess.Popen[str]) -> None:
+    wake: str | None = None
+    if proc.stdout is not None:
+        for raw_line in proc.stdout:
+            line = raw_line.strip()
+            if _ACTIONABLE_WAKE.match(line) and wake is None:
+                wake = line
+                message = _watcher_message(root, line)
+                if message is not None:
+                    try:
+                        ctx.inject_message(message, role="user")
+                    except Exception as exc:
+                        LOGGER.error("Firstmate Hermes watcher wake injection failed: %s", exc)
+    returncode = proc.wait()
+    with _ARM_LOCK:
+        if _ARM_PROC is proc:
+            globals()["_ARM_PROC"] = None
+        shutting_down = _SHUTTING_DOWN
+    if shutting_down:
+        return
+    if returncode != 0 and wake is None:
+        LOGGER.warning("Firstmate Hermes watcher arm exited with status %s", returncode)
+    _arm(root, ctx)
+
+
+def _arm(root: Path, ctx) -> None:
     global _ARM_PROC
     with _ARM_LOCK:
+        if _SHUTTING_DOWN:
+            return
         if _ARM_PROC is not None and _ARM_PROC.poll() is None:
             return
         try:
@@ -44,17 +90,27 @@ def _arm(root: Path) -> None:
                 cwd=root,
                 env=_environment(root),
                 stdin=subprocess.DEVNULL,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
                 start_new_session=True,
             )
+            proc = _ARM_PROC
         except OSError as exc:
             LOGGER.error("Firstmate Hermes watcher arm failed: %s", exc)
+            return
+    threading.Thread(
+        target=_monitor_arm,
+        args=(root, ctx, proc),
+        name="firstmate-hermes-watcher",
+        daemon=True,
+    ).start()
 
 
 def _disarm() -> None:
-    global _ARM_PROC
+    global _ARM_PROC, _SHUTTING_DOWN
     with _ARM_LOCK:
+        _SHUTTING_DOWN = True
         proc, _ARM_PROC = _ARM_PROC, None
     if proc is None or proc.poll() is not None:
         return
@@ -131,12 +187,12 @@ def register(ctx) -> None:
 
     def on_session_start(**kwargs) -> None:
         del kwargs
-        _arm(root)
+        _arm(root, ctx)
 
     def on_session_end(**kwargs) -> None:
         del kwargs
         global _FOLLOWUP_SENT
-        _arm(root)
+        _arm(root, ctx)
         if not _guard(root):
             return
         with _FOLLOWUP_LOCK:
