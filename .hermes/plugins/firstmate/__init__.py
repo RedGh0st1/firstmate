@@ -119,10 +119,13 @@ def _monitor_arm(root: Path, ctx, proc: subprocess.Popen[str]) -> None:
             if message is not None:
                 _inject(ctx, message)
             return
-        time.sleep(_retry_delay(failures))
-        with _ARM_LOCK:
-            if _SHUTTING_DOWN:
-                return
+        delay = _retry_delay(failures)
+    else:
+        delay = _REARM_RETRY_BASE_S
+    time.sleep(delay)
+    with _ARM_LOCK:
+        if _SHUTTING_DOWN:
+            return
     _arm(root, ctx)
 
 

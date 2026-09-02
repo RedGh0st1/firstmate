@@ -2408,10 +2408,12 @@ kimi_spawn_fail() {  # <detail>
   echo "error: $1; inspect window $T" >&2
 }
 
-# hermes_wait_for_ready: poll the launched Hermes TUI until its composer is
-# positively proven empty (the same readiness signal the away-mode daemon's
-# inject path requires before typing), so the brief pointer is not typed into a
-# composer that is still loading project plugins or sitting on a trust prompt.
+# hermes_wait_for_ready: poll the launched Hermes TUI for a composer the shared
+# classifier positively proves empty - the preferred pre-type readiness signal
+# so the brief pointer is not typed while project plugins are still loading or a
+# trust prompt is up. Returns non-zero on timeout; the caller treats that as
+# best-effort because the shared classifier is not guaranteed to recognise every
+# TUI shape and the submit verdict is the authoritative delivery gate.
 hermes_wait_for_ready() {
   local i=0 max=${FM_HERMES_READY_POLLS:-60} interval=${FM_HERMES_POLL_INTERVAL:-0.5}
   while [ "$i" -lt "$max" ]; do
@@ -3111,10 +3113,8 @@ if [ "$HARNESS" = kimi ]; then
   fi
 fi
 if [ "$HARNESS" = hermes ]; then
-  if ! hermes_wait_for_ready; then
-    echo "error: Hermes did not present a ready composer before brief delivery; inspect window $T" >&2
-    exit 1
-  fi
+  hermes_wait_for_ready \
+    || echo "warning: Hermes composer was not classified ready within the launch budget; delivering the brief pointer best-effort; inspect window $T if the worker never starts" >&2
   HERMES_POINTER="Read the brief at $BRIEF_REAL and follow it exactly."
   HERMES_SUBMIT_RETRIES=${FM_HERMES_SUBMIT_RETRIES:-3}
   HERMES_SUBMIT_SLEEP=${FM_HERMES_SUBMIT_SLEEP:-1}
@@ -3125,10 +3125,13 @@ if [ "$HARNESS" = hermes ]; then
     echo "error: Hermes brief pointer could not be submitted; inspect window $T" >&2
     exit 1
   fi
-  if [ "$HERMES_SUBMIT_VERDICT" != empty ]; then
-    echo "error: Hermes brief pointer delivery was not confirmed (verdict=${HERMES_SUBMIT_VERDICT:-unknown}; text may be sitting in the composer); inspect window $T" >&2
-    exit 1
-  fi
+  case "$HERMES_SUBMIT_VERDICT" in
+    empty | unknown) ;;
+    *)
+      echo "error: Hermes brief pointer was not delivered (verdict=${HERMES_SUBMIT_VERDICT:-unknown}; text is still in the composer); inspect window $T" >&2
+      exit 1
+      ;;
+  esac
 fi
 if [ "$KIND" = secondmate ] && [ "${FM_SKIP_SECONDMATE_INHERIT:-0}" != 1 ]; then
   if ! fm_config_reread_discard_pending "$PROJ_ABS" "$ID" "$FM_HOME"; then

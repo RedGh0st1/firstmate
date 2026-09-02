@@ -50,7 +50,7 @@ test_hermes_plugin_guard_injects_bounded_followup() {
 
   cat > "$tmp/bin/fm-watch-arm.sh" <<'SH'
 #!/usr/bin/env bash
-exit 0
+exec sleep 3600
 SH
   cat > "$tmp/bin/fm-turnend-guard.sh" <<'SH'
 #!/usr/bin/env bash
