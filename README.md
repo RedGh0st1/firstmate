@@ -58,7 +58,7 @@ Full detail on every feature lives in [docs/architecture.md](docs/architecture.m
 
 ### Requirements
 
-- A verified primary agent harness: Claude Code, Grok, Pi, `pi-signed`, Codex, OpenCode, or Cursor Agent CLI.
+- A verified primary agent harness: Claude Code, Grok, Pi, `pi-signed`, Codex, OpenCode, Cursor Agent CLI, or Hermes.
 - Git and the GitHub CLI, authenticated through `gh auth login`.
 - The CLI and dependencies for your selected runtime backend; tmux is the reference default.
 
@@ -85,6 +85,15 @@ cd firstmate
 ```
 
 Then launch one of the co-primary harnesses; AGENTS.md takes over from there:
+
+**Hermes**
+
+```sh
+HERMES_ENABLE_PROJECT_PLUGINS=true hermes --accept-hooks
+```
+
+Hermes uses the tracked project plugin under `.hermes/plugins/firstmate/` for watcher re-arm, bounded re-wake, and the passive turn-end guard.
+Hermes has no native blocking turn-end hook, so the plugin queues at most one bounded follow-up when the shared guard reports a supervision lapse.
 
 **Claude Code**
 

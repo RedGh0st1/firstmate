@@ -482,7 +482,7 @@ spawn_remote_secondmate() {
     harness=$("$FM_ROOT/bin/fm-harness.sh" secondmate)
   fi
   case "$harness" in
-    claude|codex|opencode|pi|pi-signed|grok|kimi|cursor) ;;
+    claude|codex|opencode|pi|pi-signed|grok|kimi|cursor|hermes) ;;
     *)
       fm_lock_release "$registry_lock" || true
       fm_lock_release "$SPAWN_TASK_LOCK" || true
@@ -1166,7 +1166,7 @@ if [ "$RELAUNCH" -eq 1 ]; then
   }
 elif [ "$KIND" = secondmate ]; then
   case "${POS[1]:-}" in
-    ''|claude|codex|opencode|pi|pi-signed|grok|kimi|cursor|muse)
+    ''|claude|codex|opencode|pi|pi-signed|grok|kimi|cursor|muse|hermes)
       ARG3=${POS[1]:-}
       ;;
     *' '*)
@@ -1296,6 +1296,11 @@ launch_template() {
     # written below. Nothing to place in the template for it.
     # codex, opencode, and kimi are also markerless and share this inherited-marker hazard; changing their verified launch boundaries belongs in follow-up work.
     muse) printf '%s' 'env -u CLAUDECODE -u PI_CODING_AGENT -u GROK_AGENT -u FM_PI_HARNESS XDG_CONFIG_HOME=__MUSECONFIG__ XDG_DATA_HOME=__MUSEDATA__ MUSE_EXPERIMENTAL_FOREIGN_PERSONAL_CONTEXT_KILL=on __MUSEBIN__ --yolo __MODELFLAG____EFFORTFLAG__"$(__OPINPUT__ encode launch-brief < __BRIEF__)"' ;;
+    # Hermes loads the repository's project plugin when explicitly enabled. The
+    # plugin owns watcher re-arm and bounded turn-end follow-up through Hermes'
+    # documented session hooks. A bare interactive session receives the brief
+    # after startup through the common typed submit path below.
+    hermes) printf '%s' 'HERMES_AGENT=true HERMES_ENABLE_PROJECT_PLUGINS=true hermes --yolo --accept-hooks' ;;
     *) return 1 ;;
   esac
 }
@@ -1481,7 +1486,7 @@ model_flag_for_harness() {
   local harness=$1 model=$2
   [ -n "$model" ] && [ "$model" != default ] || return 0
   case "$harness" in
-    claude|codex|opencode|pi|pi-signed|grok|kimi|cursor|muse)
+    claude|codex|opencode|pi|pi-signed|grok|kimi|cursor|muse|hermes)
       printf -- '--model %s ' "$(shell_quote "$model")"
       ;;
   esac
@@ -2971,9 +2976,13 @@ case "$HARNESS" in
 esac
 LAUNCH=${LAUNCH//__WORKTREE__/$sq_worktree}
 case "$HARNESS" in
-  claude|codex|opencode|pi|pi-signed|grok|kimi|muse)
+  claude|codex|opencode|pi|pi-signed|grok|kimi|muse|hermes)
     LAUNCH="env -u CURSOR_AGENT -u CURSOR_INVOKED_AS $LAUNCH"
     ;;
+esac
+case "$HARNESS" in
+  hermes) ;;
+  *) LAUNCH="env -u HERMES_AGENT $LAUNCH" ;;
 esac
 # Crewmate panes are created by a long-lived tmux/herdr daemon that does not
 # inherit firstmate's current environment, so a bare `claude` in the pane falls
@@ -3084,6 +3093,13 @@ if [ "$HARNESS" = kimi ]; then
   fi
   if ! kimi_wait_for_delivery; then
     kimi_spawn_fail "kimi brief pointer delivery was not confirmed"
+    exit 1
+  fi
+fi
+if [ "$HARNESS" = hermes ]; then
+  HERMES_POINTER="Read the brief at $BRIEF_REAL and follow it exactly."
+  if ! fm_backend_send_text_submit "$BACKEND" "$T" "$HERMES_POINTER" 3 1 1 "$W"; then
+    echo "error: Hermes brief pointer could not be submitted" >&2
     exit 1
   fi
 fi
