@@ -24,6 +24,7 @@ The project-local plugin at `.hermes/plugins/firstmate/` registers `on_session_s
 Hermes project plugins are disabled by default, so the documented launch command explicitly sets `HERMES_ENABLE_PROJECT_PLUGINS=true`.
 
 At session start the plugin starts one detached `bin/fm-watch-arm.sh` process with `FM_ROOT_OVERRIDE` and `FM_HOME` bound to the Firstmate checkout.
+It re-arms a successor cycle after every cycle exit with bounded exponential retry, injects the actionable cycle close as a typed `watcher` wake through `ctx.inject_message()`, and injects a typed `FAILED` watcher notice once the bounded retries are exhausted.
 At session end it re-arms the watcher, invokes `bin/fm-turnend-guard.sh`, and queues at most one typed `turn-end-guard` follow-up with `ctx.inject_message()` when the guard returns 2.
 The follow-up latch resets when the next Hermes stream starts.
 
