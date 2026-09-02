@@ -41,12 +41,14 @@ def _retry_delay(attempt: int) -> float:
     return min(_REARM_RETRY_MAX_S, _REARM_RETRY_BASE_S * 2 ** max(0, attempt - 1))
 
 
-def _inject(ctx, message: str) -> None:
+def _inject(ctx, message: str) -> bool:
     with _INJECT_LOCK:
         try:
             ctx.inject_message(message, role="user")
         except Exception as exc:
             LOGGER.error("Firstmate Hermes message injection failed: %s", exc)
+            return False
+    return True
 
 
 def _root() -> Path:
@@ -70,8 +72,7 @@ _WATCHER_WAKE_INSTRUCTION = (
 )
 
 
-def _watcher_message(root: Path, wake: str) -> str | None:
-    body = "%s\n\n%s" % (_WATCHER_WAKE_INSTRUCTION, wake)
+def _encode_watcher(root: Path, body: str) -> str | None:
     encoded = subprocess.run(
         [str(root / "bin" / "fm-operational-input.sh"), "encode", "watcher"],
         cwd=root,
@@ -82,9 +83,22 @@ def _watcher_message(root: Path, wake: str) -> str | None:
         check=False,
     )
     if encoded.returncode != 0 or not encoded.stdout.strip():
-        LOGGER.error("Firstmate Hermes watcher wake could not be encoded")
+        LOGGER.error("Firstmate Hermes watcher message could not be encoded")
         return None
     return encoded.stdout.strip()
+
+
+def _watcher_message(root: Path, wake: str) -> str | None:
+    return _encode_watcher(root, "%s\n\n%s" % (_WATCHER_WAKE_INSTRUCTION, wake))
+
+
+def _watcher_failed_message(root: Path, detail: str) -> str | None:
+    return _encode_watcher(
+        root,
+        "FIRSTMATE WATCHER FAILED - %s; supervision is down until the watcher is "
+        "re-armed. Re-arm it with bin/fm-watch-arm.sh; there is no queued wake to drain."
+        % detail,
+    )
 
 
 def _monitor_arm(root: Path, ctx, proc: subprocess.Popen[str]) -> None:
@@ -118,10 +132,9 @@ def _monitor_arm(root: Path, ctx, proc: subprocess.Popen[str]) -> None:
             _REARM_RETRY_LIMIT,
         )
         if failures > _REARM_RETRY_LIMIT:
-            message = _watcher_message(
+            message = _watcher_failed_message(
                 root,
-                "FAILED - firstmate watcher re-arm failed %d consecutive times; "
-                "supervision is down until the watcher is re-armed" % _REARM_RETRY_LIMIT,
+                "re-arm failed %d consecutive times" % _REARM_RETRY_LIMIT,
             )
             if message is not None:
                 _inject(ctx, message)
@@ -261,8 +274,9 @@ def register(ctx) -> None:
                 return
             _FOLLOWUP_SENT = True
         message = _followup(root)
-        if message is not None:
-            _inject(ctx, message)
+        if message is None or not _inject(ctx, message):
+            with _FOLLOWUP_LOCK:
+                _FOLLOWUP_SENT = False
 
     ctx.register_hook("on_stream_start", on_stream_start)
     ctx.register_hook("on_session_start", on_session_start)
