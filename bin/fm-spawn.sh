@@ -1300,7 +1300,7 @@ launch_template() {
     # plugin owns watcher re-arm and bounded turn-end follow-up through Hermes'
     # documented session hooks. A bare interactive session receives the brief
     # after startup through the common typed submit path below.
-    hermes) printf '%s' 'env -u CLAUDECODE -u PI_CODING_AGENT -u GROK_AGENT -u FM_PI_HARNESS HERMES_AGENT=true HERMES_ENABLE_PROJECT_PLUGINS=true hermes --yolo --accept-hooks' ;;
+    hermes) printf '%s' 'env -u CLAUDECODE -u PI_CODING_AGENT -u GROK_AGENT -u FM_PI_HARNESS HERMES_AGENT=true HERMES_ENABLE_PROJECT_PLUGINS=true hermes __MODELFLAG__--yolo --accept-hooks' ;;
     *) return 1 ;;
   esac
 }
@@ -2408,16 +2408,21 @@ kimi_spawn_fail() {  # <detail>
   echo "error: $1; inspect window $T" >&2
 }
 
-# hermes_wait_for_ready: poll the launched Hermes TUI for a composer the shared
-# classifier positively proves empty - the preferred pre-type readiness signal
-# so the brief pointer is not typed while project plugins are still loading or a
-# trust prompt is up. Returns non-zero on timeout; the caller treats that as
-# best-effort because the shared classifier is not guaranteed to recognise every
-# TUI shape and the submit verdict is the authoritative delivery gate.
+# hermes_wait_for_ready: the launched Hermes TUI is ready for the typed brief
+# pointer once its startup render has settled (two identical consecutive
+# captures) or the shared classifier positively proves an empty composer,
+# whichever comes first. The settle check needs no Hermes composer shape, so it
+# does not stall the full budget when the classifier cannot yet name that shape.
+# Returns non-zero if neither signal is seen within the bound; the caller then
+# proceeds best-effort.
 hermes_wait_for_ready() {
-  local i=0 max=${FM_HERMES_READY_POLLS:-60} interval=${FM_HERMES_POLL_INTERVAL:-0.5}
+  local i=0 max=${FM_HERMES_READY_POLLS:-16} interval=${FM_HERMES_POLL_INTERVAL:-0.5}
+  local prev='' cur
   while [ "$i" -lt "$max" ]; do
     [ "$(fm_backend_composer_state "$BACKEND" "$T" "$W" 2>/dev/null)" != empty ] || return 0
+    cur=$(fm_backend_capture "$BACKEND" "$T" 40 "$W" 2>/dev/null || true)
+    [ -z "$cur" ] || [ "$cur" != "$prev" ] || return 0
+    prev=$cur
     i=$((i + 1))
     [ "$i" -ge "$max" ] || sleep "$interval"
   done
@@ -3126,7 +3131,10 @@ if [ "$HARNESS" = hermes ]; then
     exit 1
   fi
   case "$HERMES_SUBMIT_VERDICT" in
-    empty | unknown) ;;
+    empty) ;;
+    unknown)
+      echo "warning: Hermes brief pointer delivery is unconfirmed (submit verdict=unknown; the shared composer classifier does not yet recognise the Hermes composer shape); inspect window $T to confirm the worker started on its brief" >&2
+      ;;
     *)
       echo "error: Hermes brief pointer was not delivered (verdict=${HERMES_SUBMIT_VERDICT:-unknown}; text is still in the composer); inspect window $T" >&2
       exit 1

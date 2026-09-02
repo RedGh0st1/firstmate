@@ -48,4 +48,5 @@ Its callback errors are logged by Hermes and never replace the shared fail-close
 
 Run the deterministic adapter tests before trusting the integration.
 A live Hermes smoke test must use the installed Hermes binary and record its version, plugin load result, watcher arm result, and one bounded guard follow-up.
+The smoke test must also capture the idle Hermes composer and register its shape in `bin/fm-composer-lib.sh` so `bin/fm-spawn.sh` brief-pointer delivery is positively confirmed rather than proceeding on an `unknown` submit verdict.
 Headless `hermes chat -q` is not a primary session and is outside this adapter's turn-end supervision boundary.
