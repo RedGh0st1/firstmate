@@ -1,0 +1,21 @@
+registered hooks: ['on_session_end', 'on_session_start', 'on_stream_start']
+
+scenario=wake
+fm-watch-arm.sh invocations (distinct pids): 3
+injected messages:
+  role='user'  '\u2063FIRSTMATE_OP: v1 watcher: WATCHER FIRED - drain queued wakes with bin/fm-wake-drain.sh and handle the reported wake. Watcher continuity is plugin-owned.\n\nsignal: captain flagged a blocked crewmate'
+  role='user'  '\u2063FIRSTMATE_OP: v1 watcher: WATCHER FIRED - drain queued wakes with bin/fm-wake-drain.sh and handle the reported wake. Watcher continuity is plugin-owned.\n\nsignal: captain flagged a blocked crewmate'
+  role='user'  '\u2063FIRSTMATE_OP: v1 watcher: WATCHER FIRED - drain queued wakes with bin/fm-wake-drain.sh and handle the reported wake. Watcher continuity is plugin-owned.\n\nsignal: captain flagged a blocked crewmate'
+
+RESULT: PASS
+exit=0
+
+registered hooks: ['on_session_end', 'on_session_start', 'on_stream_start']
+
+scenario=failed
+fm-watch-arm.sh invocations (distinct pids): 3
+injected messages:
+  role='user'  '\u2063FIRSTMATE_OP: v1 watcher: FIRSTMATE WATCHER FAILED - re-arm failed 2 consecutive times; supervision is down until the watcher is re-armed. Re-arm it with bin/fm-watch-arm.sh; there is no queued wake to drain.'
+
+RESULT: PASS
+exit=0

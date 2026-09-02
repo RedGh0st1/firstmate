@@ -1,0 +1,12 @@
+=== Hermes marker isolation (bin/fm-harness.sh) ===
+$ HERMES_AGENT=true fm-harness.sh
+hermes
+$ CLAUDECODE=1 PI_CODING_AGENT=true GROK_AGENT=1 HERMES_AGENT=true fm-harness.sh   # foreign markers inherited from launching shell
+hermes
+$ CLAUDECODE=1 fm-harness.sh   # no Hermes marker -> unchanged
+claude
+
+=== Hermes lifecycle control table (bin/fm-control-lib.sh) ===
+fm_control_harness_supported hermes -> fm_control_harness_family hermes -> hermesfm_control_interrupt_key hermes -> Escapefm_control_interrupt_repeat hermes -> 1fm_control_exit_command hermes -> /exit
+=== supervision repair line (bin/fm-supervision-instructions.sh --harness hermes) ===
+watcher supervision is owned by the Hermes project plugin; inspect its enabled state and watcher startup log before ending the turn.

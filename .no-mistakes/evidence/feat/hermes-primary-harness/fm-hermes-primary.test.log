@@ -1,0 +1,10 @@
+FM_TEST_BEGIN 2026-09-02T22:25:53Z tests/fm-hermes-primary.test.sh family=unclassified expected_gate_skip=none
+ok - fm-harness detects HERMES_AGENT=true as hermes
+ok - fm-harness prefers HERMES_AGENT over an inherited foreign primary marker
+ok - control table exposes Hermes lifecycle operations
+ok - Hermes project plugin compiles
+ok - Hermes plugin injects exactly one bounded follow-up per stream on a guard lapse
+FM_TEST_END 2026-09-02T22:25:54Z tests/fm-hermes-primary.test.sh exit=0 duration_ms=994 gate_skip=false
+FM_TEST_SUMMARY total=1 failed=0 skipped_gate=0 duration_ms=1051
+FM_TEST_SUMMARY_FAMILY family=unclassified count=1 duration_ms=994 failed=0
+FM_TEST_SLOWEST rank=1 script=tests/fm-hermes-primary.test.sh duration_ms=994

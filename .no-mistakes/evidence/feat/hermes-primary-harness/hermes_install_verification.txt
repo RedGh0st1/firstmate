@@ -1,0 +1,15 @@
+=== Hermes installation verification ===
+$ hermes --version
+Hermes Agent v0.20.6 (2026.8.27) · upstream 6ef66919 · local 26f178e5 (+1 carried commit)
+Install directory: /Users/lennienurse/.hermes/hermes-agent
+
+reference doc requires: Hermes Agent 0.20.6 or newer -> satisfied
+
+$ hermes plugins doctor .hermes/plugins/firstmate --ci   # real runtime contract validation
+Plugin Doctor: 
+/Users/lennienurse/.no-mistakes/worktrees/be262198099b/01M1J2V3T51RPJY9S8S8F9B08
+R/.hermes/plugins/firstmate
+  manifest: firstmate 1.0 (standalone)
+  OK: runtime discovery, manifest parsing, import, and registration passed
+  registrations: 0 tool(s), 0 hook(s)
+rc=0
