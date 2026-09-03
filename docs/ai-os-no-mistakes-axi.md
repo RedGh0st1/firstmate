@@ -22,12 +22,12 @@ This follow-up extends the Firstmate Hermes native plugin with the local no-mist
 - Workdir is explicit when supplied and otherwise comes from the Hermes session/process context.
 - Results include sanitized argv, cwd, stdout, stderr, exit code, timeout state, and parsed JSON when available.
 - Credentials and token-like values are redacted from returned output.
-- Hermes does not write Factory evidence or approve a Factory gate through these tools.
+- These tools expose no Factory evidence-writing operation. Gate-mutating AXI actions (`respond`, including `--action approve`, plus `abort` and `sync`) are reachable only with an explicit per-call `confirm=true`, never through an implicit, default, or batched path.
 - Native plugin load and callback failures remain Hermes fail-open boundaries; no tool claims stronger enforcement.
 
 ## AI-OS use
 
-The canonical AI-OS policy remains authoritative for dispatch, human approval, security review, independent verification, and merge authority. Hermes is the sole dispatcher. Use the tools for inspection and for explicitly confirmed no-mistakes operations; keep Factory control-plane evidence and approval commands in the human-operated terminal path.
+The canonical AI-OS policy remains authoritative for dispatch, human approval, security review, independent verification, and merge authority. Hermes is the sole dispatcher. Use the tools for inspection and for explicitly confirmed no-mistakes operations; gate approval through `axi respond --action approve` is reachable but demands a deliberate per-call `confirm=true`, Factory control-plane evidence is never written through these tools, and interactive `attach` stays in the human-operated terminal path.
 
 To make the project plugin available in a Hermes session from this repository:
 
