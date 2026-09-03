@@ -11,7 +11,9 @@ from pathlib import Path
 from typing import Any
 
 
-_SECRET = re.compile(r"(?i)(?:gho_|github_pat_|token[=: ]+|authorization[=: ]+bearer\s+)[^\s,;]+")
+_SECRET = re.compile(
+    r"(?i)(?:gh[opusr]_|github_pat_|token[=: ]+|authorization[=: ]+bearer\s+)[^\s,;]+"
+)
 _ROOT_READ = {"status", "doctor", "runs"}
 _ROOT_MUTATE = {"init", "rerun", "update", "eject", "sync"}
 _AXI_READ = {"status", "logs"}
@@ -66,7 +68,7 @@ def _result(argv: list[str], cwd: Path, timeout_s: int) -> str:
     stderr = _redact(completed.stderr)
     parsed: Any = None
     try:
-        parsed = json.loads(completed.stdout)
+        parsed = json.loads(stdout)
     except (json.JSONDecodeError, TypeError):
         pass
     return json.dumps({
@@ -143,9 +145,9 @@ def no_mistakes_axi(args: dict[str, Any], **kw) -> str:
     return _result(argv, _workdir(args, kw), _timeout(args))
 
 
-def _schema(description: str, properties: dict[str, Any], required: list[str] | None = None) -> dict[str, Any]:
+def _schema(name: str, description: str, properties: dict[str, Any], required: list[str] | None = None) -> dict[str, Any]:
     return {
-        "name": "no_mistakes",
+        "name": name,
         "description": description,
         "parameters": {
             "type": "object",
@@ -157,6 +159,7 @@ def _schema(description: str, properties: dict[str, Any], required: list[str] | 
 
 
 ADMIN_SCHEMA = _schema(
+    "no_mistakes_admin",
     "Operate the local no-mistakes CLI. Read-only operations are status, doctor, and runs. Mutating operations require confirm=true. Interactive attach is intentionally terminal-only.",
     {
         "operation": {"type": "string", "enum": sorted(_ROOT_READ | _ROOT_MUTATE)},
@@ -169,6 +172,7 @@ ADMIN_SCHEMA = _schema(
 )
 
 AXI_SCHEMA = _schema(
+    "no_mistakes_axi",
     "Operate the complete non-interactive no-mistakes AXI interface. Read-only operations are status and logs. run, respond, abort, and sync require confirm=true; run also requires intent and respond requires action.",
     {
         "operation": {"type": "string", "enum": sorted(_AXI_READ | _AXI_MUTATE)},
