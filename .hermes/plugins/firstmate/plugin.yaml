@@ -1,3 +1,6 @@
 name: firstmate
-version: "1.0"
-description: Firstmate watcher supervision and turn-end guard for Hermes primary sessions.
+version: "1.1"
+description: Firstmate supervision plus no-mistakes and AXI controls for Hermes primary sessions.
+provides_tools:
+  - no_mistakes_admin
+  - no_mistakes_axi

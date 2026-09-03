@@ -12,6 +12,14 @@ import threading
 import time
 from pathlib import Path
 
+try:
+    from .no_mistakes import register_tools
+except ImportError:
+    import sys
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from no_mistakes import register_tools
+
 
 LOGGER = logging.getLogger("firstmate.hermes")
 _FOLLOWUP_LOCK = threading.Lock()
@@ -246,7 +254,9 @@ def _followup(root: Path) -> str | None:
 
 
 def register(ctx) -> None:
-    """Register the Hermes session lifecycle adapter."""
+    """Register supervision hooks and no-mistakes/AXI tools."""
+    if callable(getattr(ctx, "register_tool", None)):
+        register_tools(ctx)
     root = _root()
     if not _firstmate_root(root):
         return
