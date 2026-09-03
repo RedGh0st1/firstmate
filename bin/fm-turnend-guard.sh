@@ -12,7 +12,8 @@
 # the primary is about to end a turn.
 # Claude and codex can block directly by preserving exit status 2 and stderr.
 # OpenCode and pi adapters use the same predicate and force one bounded
-# follow-up because their turn-end events are passive. Grok delegates native
+# follow-up because their turn-end events are passive. Hermes uses its project
+# plugin and the same bounded passive follow-up path. Grok delegates native
 # blocking when its running Stop payload advertises that capability, with one
 # bounded resume fallback for payloads from pre-native processes. Cursor calls
 # this guard back with --cursor from bin/fm-turnend-guard-cursor.sh and renders

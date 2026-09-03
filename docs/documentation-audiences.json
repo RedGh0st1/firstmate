@@ -193,6 +193,10 @@
       "audience": "agent-runtime"
     },
     {
+      "path": ".agents/skills/harness-adapters/references/harness/hermes.md",
+      "audience": "agent-runtime"
+    },
+    {
       "path": ".agents/skills/harness-adapters/references/harness/kimi.md",
       "audience": "agent-runtime"
     },
@@ -267,6 +271,10 @@
     {
       "path": "docs/agent-control.md",
       "audience": "maintainer-architecture"
+    },
+    {
+      "path": "docs/ai-os-no-mistakes-axi.md",
+      "audience": "operator-current"
     },
     {
       "path": "docs/architecture.md",
@@ -386,6 +394,10 @@
     },
     {
       "path": "docs/supervision-protocols/grok.md",
+      "audience": "agent-runtime"
+    },
+    {
+      "path": "docs/supervision-protocols/hermes.md",
       "audience": "agent-runtime"
     },
     {
