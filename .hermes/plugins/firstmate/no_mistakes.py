@@ -140,7 +140,7 @@ def no_mistakes_axi(args: dict[str, Any], **kw) -> str:
         if not isinstance(step, str) or not step.strip():
             raise ValueError("axi logs requires a step")
         argv += ["--step", step, "--full"]
-    elif operation == "status" and args.get("run"):
+    if operation in {"status", "logs"} and args.get("run"):
         argv += ["--run", str(args["run"])]
     return _result(argv, _workdir(args, kw), _timeout(args))
 
@@ -180,7 +180,7 @@ AXI_SCHEMA = _schema(
         "action": {"type": "string", "enum": ["approve", "fix", "skip"], "description": "Required for axi respond."},
         "findings": {"type": "array", "items": {"type": "string"}, "description": "Finding IDs for axi respond --action fix."},
         "step": {"type": "string", "description": "Required for axi logs."},
-        "run": {"type": "string", "description": "Optional run ID for axi status."},
+        "run": {"type": "string", "description": "Optional run ID for axi status or logs."},
         "confirm": {"type": "boolean", "description": "Required true for run, respond, abort, or sync."},
         "workdir": {"type": "string", "description": "Absolute repository worktree path."},
         "timeout_s": {"type": "integer", "minimum": 1, "maximum": 600},
