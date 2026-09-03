@@ -1,0 +1,68 @@
+
+========================================================================
+Two native Hermes tools registered by the firstmate plugin
+------------------------------------------------------------------------
+tool 1: no_mistakes_admin | operations: ['doctor', 'eject', 'init', 'rerun', 'runs', 'status', 'sync', 'update']
+tool 2: no_mistakes_axi | operations: ['abort', 'logs', 'respond', 'run', 'status', 'sync']
+
+========================================================================
+no_mistakes_admin(operation=status) -> real `no-mistakes status` dispatch, structured envelope
+------------------------------------------------------------------------
+{
+  "ok": true,
+  "command": "status",
+  "argv_redacted": [
+    "status"
+  ],
+  "cwd": "/Users/lennienurse/.no-mistakes/worktrees/be262198099b/01M1JA92X048HC02CNYEEDT66F",
+  "exit_code": 0,
+  "timed_out": false,
+  "stdout": "repo not initialized (run 'no-mistakes init' first)\n",
+  "stderr": "",
+  "parsed": null
+}
+
+========================================================================
+no_mistakes_axi(operation=status) -> real `no-mistakes axi status` dispatch, structured envelope
+------------------------------------------------------------------------
+{
+  "ok": false,
+  "command": "axi",
+  "argv_redacted": [
+    "axi",
+    "status"
+  ],
+  "cwd": "/Users/lennienurse/.no-mistakes/worktrees/be262198099b/01M1JA92X048HC02CNYEEDT66F",
+  "exit_code": 1,
+  "timed_out": false,
+  "stdout": "error: repo not initialized (run 'no-mistakes init' first)\nhelp[1]: Run `no-mistakes init` to set up the gate in this repository\n",
+  "stderr": "",
+  "parsed": null
+}
+
+========================================================================
+Confirmation gate: every mutating / approving operation is rejected without confirm=true
+------------------------------------------------------------------------
+  no_mistakes_admin(operation=init): BLOCKED -> This operation mutates or approves state; pass confirm=true explicitly
+  no_mistakes_admin(operation=eject): BLOCKED -> This operation mutates or approves state; pass confirm=true explicitly
+  no_mistakes_admin(operation=sync): BLOCKED -> This operation mutates or approves state; pass confirm=true explicitly
+  no_mistakes_axi(operation=run): BLOCKED -> This operation mutates or approves state; pass confirm=true explicitly
+  no_mistakes_axi(operation=respond): BLOCKED -> This operation mutates or approves state; pass confirm=true explicitly
+  no_mistakes_axi(operation=abort): BLOCKED -> This operation mutates or approves state; pass confirm=true explicitly
+  no_mistakes_axi(operation=sync): BLOCKED -> This operation mutates or approves state; pass confirm=true explicitly
+
+========================================================================
+With confirm=true the mutating op dispatches but still enforces required args
+------------------------------------------------------------------------
+  run confirm=true -> arg check: axi run requires a non-empty intent
+  respond approve -> ['axi', 'respond', '--action', 'approve']
+
+========================================================================
+Secret redaction on returned CLI output (widened GitHub token prefixes)
+------------------------------------------------------------------------
+  gho_         {"token": "gho_DEADbeef0123456789abcdef"}  ->  {"token": "[REDACTED]
+  ghp_         {"token": "ghp_DEADbeef0123456789abcdef"}  ->  {"token": "[REDACTED]
+  ghu_         {"token": "ghu_DEADbeef0123456789abcdef"}  ->  {"token": "[REDACTED]
+  ghs_         {"token": "ghs_DEADbeef0123456789abcdef"}  ->  {"token": "[REDACTED]
+  ghr_         {"token": "ghr_DEADbeef0123456789abcdef"}  ->  {"token": "[REDACTED]
+  github_pat_  {"token": "github_pat_DEADbeef0123456789abcdef"}  ->  {"token": "[REDACTED]

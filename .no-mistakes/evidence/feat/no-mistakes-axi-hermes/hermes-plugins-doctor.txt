@@ -1,0 +1,6 @@
+Plugin Doctor: 
+/Users/lennienurse/.no-mistakes/worktrees/be262198099b/01M1JA92X048HC02CNYEEDT66
+F/.hermes/plugins/firstmate
+  manifest: firstmate 1.1 (standalone)
+  OK: runtime discovery, manifest parsing, import, and registration passed
+  registrations: 2 tool(s), 0 hook(s)

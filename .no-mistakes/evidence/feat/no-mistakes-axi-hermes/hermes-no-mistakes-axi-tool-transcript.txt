@@ -1,0 +1,197 @@
+==============================================================================
+REGISTERED NATIVE HERMES TOOLS  (via the real firstmate plugin register())
+==============================================================================
+
+  tool: no_mistakes_admin   (toolset=no_mistakes, schema name='no_mistakes_admin')
+  desc: Operate the local no-mistakes CLI. Read-only operations are status, doctor, and runs. Mutating operations require confirm=true. Interactive attach is intentionally terminal-only.
+  operations: ['doctor', 'eject', 'init', 'rerun', 'runs', 'status', 'sync', 'update']
+
+  tool: no_mistakes_axi   (toolset=no_mistakes, schema name='no_mistakes_axi')
+  desc: Operate the complete non-interactive no-mistakes AXI interface. Read-only operations are status and logs. run, respond, abort, and sync require confirm=true; run also requires intent and respond requires action.
+  operations: ['abort', 'logs', 'respond', 'run', 'status', 'sync']
+
+
+==============================================================================
+READ-ONLY DISPATCH TO THE REAL no-mistakes BINARY
+==============================================================================
+
+------------------------------------------------------------------------------
+$ hermes tool call no_mistakes_admin {"operation": "status", "workdir": "/Users/lennienurse/.no-mistakes/worktrees/be262198099b/01M1JA92X048HC02CNYEEDT66F"}
+  # root status - CLI reachable, verbatim output, structured envelope
+{
+  "ok": true,
+  "command": "status",
+  "argv_redacted": [
+    "status"
+  ],
+  "cwd": "/Users/lennienurse/.no-mistakes/worktrees/be262198099b/01M1JA92X048HC02CNYEEDT66F",
+  "exit_code": 0,
+  "timed_out": false,
+  "stdout": "repo not initialized (run 'no-mistakes init' first)\n",
+  "stderr": "",
+  "parsed": null
+}
+
+------------------------------------------------------------------------------
+$ hermes tool call no_mistakes_axi {"operation": "status", "workdir": "/Users/lennienurse/.no-mistakes/worktrees/be262198099b/01M1JA92X048HC02CNYEEDT66F"}
+  # axi status - non-zero exit surfaced faithfully as ok=false
+{
+  "ok": false,
+  "command": "axi",
+  "argv_redacted": [
+    "axi",
+    "status"
+  ],
+  "cwd": "/Users/lennienurse/.no-mistakes/worktrees/be262198099b/01M1JA92X048HC02CNYEEDT66F",
+  "exit_code": 1,
+  "timed_out": false,
+  "stdout": "error: repo not initialized (run 'no-mistakes init' first)\nhelp[1]: Run `no-mistakes init` to set up the gate in this repository\n",
+  "stderr": "",
+  "parsed": null
+}
+
+------------------------------------------------------------------------------
+$ hermes tool call no_mistakes_admin {"operation": "doctor", "workdir": "/Users/lennienurse/.no-mistakes/worktrees/be262198099b/01M1JA92X048HC02CNYEEDT66F"}
+  # root doctor - read-only diagnostic passthrough
+{
+  "ok": true,
+  "command": "doctor",
+  "argv_redacted": [
+    "doctor"
+  ],
+  "cwd": "/Users/lennienurse/.no-mistakes/worktrees/be262198099b/01M1JA92X048HC02CNYEEDT66F",
+  "exit_code": 0,
+  "timed_out": false,
+  "stdout": "  System\n  \u2713 git             git version 2.55.0\n  \u2713 gh              ok\n  \u2013 az              not found (optional, needed for Azure DevOps PR/CI)\n  \u2713 data directory  /Users/lennienurse/.no-mistakes\n  \u2713 database        ok\n  \u2713 daemon          running\n\n  Agents\n  \u2713 claude          /Users/lennienurse/.local/bin/claude\n  \u2713 codex           /Users/lennienurse/.local/bin/codex\n  \u2013 grok            not found\n  \u2013 rovodev         not found\n  \u2013 opencode        not found\n  \u2713 pi              /opt/homebrew/bin/pi\n  \u2013 copilot         not found\n  \u2713 antigravity     /Users/lennienurse/.local/bin/agy\n  \u2013 acpx            not found\n  \u2013 cursor          not found (cursor-agent, acpx)\n  \u2713 gate validation  claude is runnable\n",
+  "stderr": "",
+  "parsed": null
+}
+
+
+==============================================================================
+CONFIRMATION GATING ON MUTATING / APPROVING OPERATIONS
+==============================================================================
+
+------------------------------------------------------------------------------
+$ hermes tool call no_mistakes_axi {"operation": "sync", "workdir": "/Users/lennienurse/.no-mistakes/worktrees/be262198099b/01M1JA92X048HC02CNYEEDT66F"}
+  # axi sync without confirm -> blocked
+  -> REJECTED (ValueError): This operation mutates or approves state; pass confirm=true explicitly
+
+------------------------------------------------------------------------------
+$ hermes tool call no_mistakes_axi {"operation": "respond", "action": "approve", "workdir": "/Users/lennienurse/.no-mistakes/worktrees/be262198099b/01M1JA92X048HC02CNYEEDT66F"}
+  # axi respond --action approve without confirm -> blocked (gate approval stays gated)
+  -> REJECTED (ValueError): This operation mutates or approves state; pass confirm=true explicitly
+
+------------------------------------------------------------------------------
+$ hermes tool call no_mistakes_axi {"operation": "abort", "workdir": "/Users/lennienurse/.no-mistakes/worktrees/be262198099b/01M1JA92X048HC02CNYEEDT66F"}
+  # axi abort without confirm -> blocked
+  -> REJECTED (ValueError): This operation mutates or approves state; pass confirm=true explicitly
+
+------------------------------------------------------------------------------
+$ hermes tool call no_mistakes_admin {"operation": "rerun", "workdir": "/Users/lennienurse/.no-mistakes/worktrees/be262198099b/01M1JA92X048HC02CNYEEDT66F"}
+  # root rerun without confirm -> blocked
+  -> REJECTED (ValueError): This operation mutates or approves state; pass confirm=true explicitly
+
+------------------------------------------------------------------------------
+$ hermes tool call no_mistakes_admin {"operation": "eject", "workdir": "/Users/lennienurse/.no-mistakes/worktrees/be262198099b/01M1JA92X048HC02CNYEEDT66F"}
+  # root eject without confirm -> blocked
+  -> REJECTED (ValueError): This operation mutates or approves state; pass confirm=true explicitly
+
+------------------------------------------------------------------------------
+$ hermes tool call no_mistakes_axi {"operation": "run", "confirm": true, "workdir": "/Users/lennienurse/.no-mistakes/worktrees/be262198099b/01M1JA92X048HC02CNYEEDT66F"}
+  # axi run with confirm but no intent -> blocked (intent mandatory)
+  -> REJECTED (ValueError): axi run requires a non-empty intent
+
+------------------------------------------------------------------------------
+$ hermes tool call no_mistakes_axi {"operation": "respond", "action": "bogus", "confirm": true, "workdir": "/Users/lennienurse/.no-mistakes/worktrees/be262198099b/01M1JA92X048HC02CNYEEDT66F"}
+  # axi respond with an unsupported action -> blocked
+  -> REJECTED (ValueError): axi respond action must be approve, fix, or skip
+
+
+==============================================================================
+ARGV CONSTRUCTION + SECRET REDACTION  (no mutating dispatch)
+==============================================================================
+
+------------------------------------------------------------------------------
+$ hermes tool call no_mistakes_axi {"operation": "run", "confirm": true, "intent": "ship fix; auth=Bearer ghp_DEADbeef0123456789abcdefGHIJ token", "workdir": "/Users/lennienurse/.no-mistakes/worktrees/be262198099b/01M1JA92X048HC02CNYEEDT66F"}
+  # axi run intent carrying a token -> argv_redacted scrubs it before it can reach logs
+{
+  "ok": true,
+  "would_run_argv": [
+    "axi",
+    "run",
+    "--intent",
+    "ship fix; auth=Bearer ghp_DEADbeef0123456789abcdefGHIJ token"
+  ],
+  "argv_redacted": [
+    "axi",
+    "run",
+    "--intent",
+    "ship fix; auth=Bearer [REDACTED] token"
+  ],
+  "cwd": "/Users/lennienurse/.no-mistakes/worktrees/be262198099b/01M1JA92X048HC02CNYEEDT66F",
+  "timeout_s": 120
+}
+
+------------------------------------------------------------------------------
+$ hermes tool call no_mistakes_axi {"operation": "respond", "action": "fix", "confirm": true, "findings": ["finding-001", "finding-002"], "workdir": "/Users/lennienurse/.no-mistakes/worktrees/be262198099b/01M1JA92X048HC02CNYEEDT66F"}
+  # axi respond --action fix forwards comma-joined finding IDs
+{
+  "ok": true,
+  "would_run_argv": [
+    "axi",
+    "respond",
+    "--action",
+    "fix",
+    "--findings",
+    "finding-001,finding-002"
+  ],
+  "argv_redacted": [
+    "axi",
+    "respond",
+    "--action",
+    "fix",
+    "--findings",
+    "finding-001,finding-002"
+  ],
+  "cwd": "/Users/lennienurse/.no-mistakes/worktrees/be262198099b/01M1JA92X048HC02CNYEEDT66F",
+  "timeout_s": 120
+}
+
+------------------------------------------------------------------------------
+$ hermes tool call no_mistakes_axi {"operation": "logs", "step": "ci", "run": "01RUNIDEXAMPLE0000000000000", "workdir": "/Users/lennienurse/.no-mistakes/worktrees/be262198099b/01M1JA92X048HC02CNYEEDT66F"}
+  # axi logs forwards --step, --full and the --run passthrough
+{
+  "ok": true,
+  "would_run_argv": [
+    "axi",
+    "logs",
+    "--step",
+    "ci",
+    "--full",
+    "--run",
+    "01RUNIDEXAMPLE0000000000000"
+  ],
+  "argv_redacted": [
+    "axi",
+    "logs",
+    "--step",
+    "ci",
+    "--full",
+    "--run",
+    "01RUNIDEXAMPLE0000000000000"
+  ],
+  "cwd": "/Users/lennienurse/.no-mistakes/worktrees/be262198099b/01M1JA92X048HC02CNYEEDT66F",
+  "timeout_s": 120
+}
+
+
+==============================================================================
+DIRECT REDACTION COVERAGE  (widened GitHub token prefixes)
+==============================================================================
+  '{"token": "gho_DEADbeef0123456789abcdef"}'                   ->  '{"token": "[REDACTED]'
+  '{"token": "ghp_DEADbeef0123456789abcdef"}'                   ->  '{"token": "[REDACTED]'
+  '{"token": "ghu_DEADbeef0123456789abcdef"}'                   ->  '{"token": "[REDACTED]'
+  '{"token": "ghs_DEADbeef0123456789abcdef"}'                   ->  '{"token": "[REDACTED]'
+  '{"token": "ghr_DEADbeef0123456789abcdef"}'                   ->  '{"token": "[REDACTED]'
+  '{"token": "github_pat_DEADbeef0123456789abcdef"}'            ->  '{"token": "[REDACTED]'

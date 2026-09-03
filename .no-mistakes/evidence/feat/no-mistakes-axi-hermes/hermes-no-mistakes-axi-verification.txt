@@ -1,0 +1,139 @@
+### no_mistakes_admin operation=status  (real `no-mistakes status` in an initialized checkout)
+{
+  "ok": true,
+  "command": "status",
+  "argv_redacted": [
+    "status"
+  ],
+  "cwd": "/Users/lennienurse/ai-repos/firstmate",
+  "exit_code": 0,
+  "timed_out": false,
+  "stdout": "    repo:  /Users/lennienurse/ai-repos/firstmate\n  remote:  https://github.com/RedGh0st1/firstmate\n    fork:  https://github.com/RedGh0st1/firstmate.git\n    gate:  /Users/lennienurse/.no-mistakes/repos/be262198099b.git\n  daemon:  \u25cf running\n\n  Active run\n       id:  01M1JA92X048HC02CNYEEDT66F\n   branch:  feat/no-mistakes-axi-hermes\n   status:  running\n     head:  b2b899cd\n  started:  2026-09-02 20:21:40\n",
+  "stderr": "",
+  "parsed": null
+}
+
+[ok  ] admin status dispatches to real CLI and succeeds
+[ok  ] admin envelope records the command
+### no_mistakes_axi operation=status  (real `no-mistakes axi status` in an initialized checkout)
+{
+  "ok": true,
+  "command": "axi",
+  "argv_redacted": [
+    "axi",
+    "status"
+  ],
+  "cwd": "/Users/lennienurse/ai-repos/firstmate",
+  "exit_code": 0,
+  "timed_out": false,
+  "stdout": "run:\n  id: \"01M1J2V3T51RPJY9S8S8F9B08R\"\n  branch: feat/hermes-primary-harness\n  status: running\n  head: 37028cf2\n  pr: \"https://github.com/RedGh0st1/firstmate/pull/1\"\n  findings: none\n  steps[9]{step,status,findings,duration_ms}:\n    intent,completed,0,0\n    rebase,completed,0,574\n    review,completed,0,584938\n    test,completed,0,308903\n    document,completed,0,174660\n    lint,completed,0,27836\n    push,completed,0,2124\n    pr,completed,0,64153\n    ci,running,0,0\n  active_steps[1]{step,status,active_for,last_activity,agent_pid,round}:\n    ci,running,2h32m,\"7s ago: log: no CI checks reported yet, waiting for checks to register...\",\"\",starting\n",
+  "stderr": "",
+  "parsed": null
+}
+
+[ok  ] axi status dispatches to real `no-mistakes axi` and succeeds
+[ok  ] axi status builds argv ['axi','status']
+[ok  ] axi status returns the real pipeline status payload
+### no_mistakes_axi operation=status  (target repo NOT gate-initialized -> graceful structured failure)
+{
+  "ok": false,
+  "command": "axi",
+  "argv_redacted": [
+    "axi",
+    "status"
+  ],
+  "cwd": "/Users/lennienurse/.no-mistakes/worktrees/be262198099b/01M1JA92X048HC02CNYEEDT66F",
+  "exit_code": 1,
+  "timed_out": false,
+  "stdout": "error: repo not initialized (run 'no-mistakes init' first)\nhelp[1]: Run `no-mistakes init` to set up the gate in this repository\n",
+  "stderr": "",
+  "parsed": null
+}
+
+[ok  ] uninitialized repo surfaces as ok=False, not a crash
+[ok  ] uninitialized failure mode is reported verbatim from the CLI
+[ok  ] axi sync without confirm -> blocked pending confirm=true
+[ok  ] axi abort without confirm -> blocked pending confirm=true
+[ok  ] axi respond --action approve without confirm -> blocked pending confirm=true
+[ok  ] admin rerun without confirm -> blocked pending confirm=true
+[ok  ] admin eject without confirm -> blocked pending confirm=true
+[ok  ] axi run w/o intent -> axi run requires a non-empty intent
+[ok  ] axi respond bad action -> axi respond action must be approve, fix, or skip
+[ok  ] admin init w/o fork_url -> init requires a non-empty fork_url
+### axi respond argv
+[
+  "axi",
+  "respond",
+  "--action",
+  "fix",
+  "--findings",
+  "schema-name-collision,parsed-bypasses-redaction"
+]
+
+[ok  ] respond forwards --action and comma-joined --findings
+### axi logs argv (with --run passthrough)
+[
+  "axi",
+  "logs",
+  "--step",
+  "ci",
+  "--full",
+  "--run",
+  "01M1J2V3T51RPJY9S8S8F9B08R"
+]
+
+[ok  ] logs forwards --run for an arbitrary historical run (review-round fix)
+### _redact over widened token prefixes
+{
+  "gho_": "line with [REDACTED] inside",
+  "ghp_": "line with [REDACTED] inside",
+  "ghu_": "line with [REDACTED] inside",
+  "ghs_": "line with [REDACTED] inside",
+  "ghr_": "line with [REDACTED] inside",
+  "github_pat_": "line with [REDACTED] inside"
+}
+
+[ok  ] gho_ token is redacted
+[ok  ] ghp_ token is redacted
+[ok  ] ghu_ token is redacted
+[ok  ] ghs_ token is redacted
+[ok  ] ghr_ token is redacted
+[ok  ] github_pat_ token is redacted
+### no_mistakes result when the CLI emits pure-JSON stdout containing a secret
+{
+  "ok": true,
+  "command": "axi",
+  "argv_redacted": [
+    "axi",
+    "status"
+  ],
+  "cwd": "/Users/lennienurse/ai-repos/firstmate",
+  "exit_code": 0,
+  "timed_out": false,
+  "stdout": "{\"pat\": \"[REDACTED], \"state\": \"ok\"}",
+  "stderr": "",
+  "parsed": null
+}
+
+[ok  ] raw secret never reaches the tool result (stdout or parsed)
+[ok  ] stdout is redacted
+[ok  ] admin schema name is no_mistakes_admin
+[ok  ] axi schema name is no_mistakes_axi
+### register_tools -> Hermes tool registry
+{
+  "no_mistakes_admin": [
+    "no_mistakes",
+    "no_mistakes_admin",
+    "no_mistakes_admin"
+  ],
+  "no_mistakes_axi": [
+    "no_mistakes",
+    "no_mistakes_axi",
+    "no_mistakes_axi"
+  ]
+}
+
+[ok  ] two distinctly-named tools are exposed
+[ok  ] internal schema names do not collide
+
+ALL CHECKS PASSED

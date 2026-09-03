@@ -1,0 +1,8 @@
+ok - admin_status real CLI dispatch (initialized repo)
+ok - axi_status real CLI dispatch (graceful not-initialized failure)
+ok - mutation requires explicit confirmation
+ok - AXI run requires intent
+ok - AXI respond approve requires explicit confirmation
+ok - AXI logs forwards --run passthrough
+ok - secret redaction covers ghp_/ghu_/ghs_/ghr_/gho_/github_pat_
+test exit: 0

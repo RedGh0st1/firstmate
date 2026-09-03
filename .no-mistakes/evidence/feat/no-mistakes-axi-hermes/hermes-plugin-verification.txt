@@ -1,0 +1,24 @@
+### 1. Plugin registers under the real Hermes runtime contracts
+$ hermes plugins doctor .hermes/plugins/firstmate --ci
+Plugin Doctor: 
+/Users/lennienurse/.no-mistakes/worktrees/be262198099b/01M1JA92X048HC02CNYEEDT66
+F/.hermes/plugins/firstmate
+  manifest: firstmate 1.1 (standalone)
+  OK: runtime discovery, manifest parsing, import, and registration passed
+  registrations: 2 tool(s), 0 hook(s)
+exit: 0
+
+### 2. hermes --version
+Hermes Agent v0.20.6 (2026.8.27) · upstream 593aa74c · local 26f178e5 (+1 carried commit)
+
+### 3. Exposed AXI operations vs. the real 'no-mistakes axi' subcommand surface
+$ no-mistakes axi --help  (Available Commands)
+Available Commands:
+  abort       Cancel the active pipeline run
+  logs        Show the log output of one pipeline step
+  respond     Answer the current approval gate and continue the run
+  run         Validate your code changes, blocking until a decision point or the outcome
+  status      Show a current-branch or explicitly selected run in detail
+  sync        Check or apply guarded current-branch synchronization
+
+plugin no_mistakes_axi enum: ['abort', 'logs', 'respond', 'run', 'status', 'sync']  -> complete match

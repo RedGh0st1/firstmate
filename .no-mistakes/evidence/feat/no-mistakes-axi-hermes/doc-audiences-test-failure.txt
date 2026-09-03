@@ -1,0 +1,9 @@
+$ bash tests/fm-documentation-audiences.test.sh
+fm-doc-audience-check: unclassified: docs/ai-os-no-mistakes-axi.md
+not ok - repository documentation audience check failed
+exit: 1
+
+# Root cause: the new doc added by this change is not registered in docs/documentation-audiences.json
+$ git show --stat 9adcae0 -- ":(glob)docs/**" | grep ai-os
+7d261a1 feat(hermes): expose no-mistakes and axi controls
+added in e63cada no-mistakes(review): align AXI safety-contract docs with confirmation-gated approve capability
