@@ -37,6 +37,15 @@ test_control_table_supports_hermes() {
   pass "control table exposes Hermes lifecycle operations"
 }
 
+test_fixture_isolates_inherited_hermes_marker() {
+  HERMES_AGENT=true bash -c '
+    . "$1/tests/lib.sh"
+    [ "${HERMES_AGENT:-}" != true ] || exit 1
+    [ "$(HERMES_AGENT=true "$1/bin/fm-harness.sh")" = hermes ]
+  ' _ "$ROOT" || fail "the test helper leaked the invoking Hermes session into fixtures"
+  pass "test fixtures clear inherited Hermes identity while allowing explicit marker tests"
+}
+
 test_hermes_plugin_compiles() {
   python3 -m py_compile "$PLUGIN" || fail "Hermes project plugin does not compile"
   pass "Hermes project plugin compiles"
@@ -127,5 +136,6 @@ PY
 test_harness_marker_detects_hermes
 test_harness_marker_hermes_wins_over_foreign_markers
 test_control_table_supports_hermes
+test_fixture_isolates_inherited_hermes_marker
 test_hermes_plugin_compiles
 test_hermes_plugin_guard_injects_bounded_followup

@@ -17,13 +17,13 @@
 . "$(dirname -- "${BASH_SOURCE[0]}")/fm-cursor-lib.sh"
 
 # Known harness command names; extend when a new adapter is verified.
-FM_HARNESS_RE='claude|codex|opencode|grok|kimi|^pi$|^pi-signed$'
+FM_HARNESS_RE='claude|codex|opencode|grok|kimi|^pi$|^pi-signed$|^hermes$'
 
 # The same harnesses as exact executable names. Keep in sync with
 # FM_HARNESS_RE. Used only for the stricter path evidence below, where the
 # loose regex would also match ordinary firstmate paths such as
 # bin/fm-claude-stop-autoarm.sh.
-FM_HARNESS_NAMES=(claude codex opencode grok kimi pi-signed pi)
+FM_HARNESS_NAMES=(claude codex opencode grok kimi pi-signed pi hermes)
 
 # Print the exact harness name carried by executable path $1 - its own basename
 # or any directory component - or return 1.
@@ -71,6 +71,19 @@ fm_harness_process_matches() {  # <comm> <args>
     case "$name" in claude) FM_HARNESS_IS_CLAUDE=1 ;; esac
     return 0
   fi
+  # Hermes is a Python console entry point. Its isolated launcher uses -c and
+  # runpy instead of a script argument. Match those entry points structurally,
+  # never an arbitrary mention of Hermes in another Python process's arguments.
+  case "$(basename -- "$argv0")" in
+    python|python[0-9]*)
+      if printf '%s' "$args" | grep -qE '^[^[:space:]]+[[:space:]]+([^[:space:]]*/)?(bin/hermes|hermes_cli/main\.py)([[:space:]]|$)'; then
+        return 0
+      fi
+      if printf '%s' "$args" | grep -qE "^[^[:space:]]+ (-(I|u|B) )*-c import sys, runpy; .*runpy\.run_path\(['\"][^'\"]*/bin/hermes['\"], run_name=['\"]__main__['\"]\)$"; then
+        return 0
+      fi
+      ;;
+  esac
   # Bare interpreter (e.g. node): match the harness name in its script path.
   case "$comm" in
     *node*|*python*)
@@ -109,8 +122,8 @@ fm_harness_process_matches() {  # <comm> <args>
 fm_harness_ancestry_pids() {
   local pid=$$ comm args extending=0 printed=0
   for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16; do
-    comm=$(ps -o comm= -p "$pid" 2>/dev/null) || break
-    args=$(ps -o args= -p "$pid" 2>/dev/null)
+    comm=$(ps -ww -o comm= -p "$pid" 2>/dev/null) || break
+    args=$(ps -ww -o args= -p "$pid" 2>/dev/null)
     if fm_harness_process_matches "$comm" "$args"; then
       printf '%s\n' "$pid"
       printed=1
@@ -147,8 +160,8 @@ EOF
 fm_harness_pid_alive() {
   local pid=$1 comm args
   kill -0 "$pid" 2>/dev/null || return 1
-  comm=$(ps -o comm= -p "$pid" 2>/dev/null) || return 1
-  args=$(ps -o args= -p "$pid" 2>/dev/null)
+  comm=$(ps -ww -o comm= -p "$pid" 2>/dev/null) || return 1
+  args=$(ps -ww -o args= -p "$pid" 2>/dev/null)
   fm_harness_process_matches "$comm" "$args"
 }
 

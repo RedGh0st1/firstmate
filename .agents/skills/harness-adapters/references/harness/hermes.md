@@ -20,6 +20,9 @@ The adapter was initially exercised on the Mac mini with Hermes Agent v0.20.6.
 
 ## Primary integration
 
+Session-lock identity is owned by `bin/fm-session-lock-lib.sh`, which recognizes the Hermes executable, Python console entry point, and isolated Python runpy launcher without trusting the environment marker alone.
+Run `tests/fm-session-lock-ancestry.test.sh` for process identity and lock-acquisition regressions.
+
 The project-local plugin at `.hermes/plugins/firstmate/` registers `on_session_start`, `on_stream_start`, and `on_session_end` hooks.
 Hermes project plugins are disabled by default, so the documented launch command explicitly sets `HERMES_ENABLE_PROJECT_PLUGINS=true`.
 

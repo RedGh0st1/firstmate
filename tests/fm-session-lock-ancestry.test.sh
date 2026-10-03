@@ -356,6 +356,40 @@ test_e2e_daemon_parented_version_named_session_keeps_its_lock() {
   pass "session-lock e2e: a version-named session under a harness-named daemon keeps its own lock"
 }
 
+test_hermes_process_identity() {
+  # shellcheck source=/dev/null
+  . "$LIB"
+  fm_harness_process_matches hermes 'hermes --accept-hooks' \
+    || fail "the Hermes executable is not recognized"
+  fm_harness_process_matches python3 '/usr/bin/python3 /opt/venv/bin/hermes --accept-hooks' \
+    || fail "the Python Hermes entry point is not recognized"
+  fm_harness_process_matches /Users/truncated "/opt/python3 -I -c import sys, runpy; sys.path.insert(0, '/opt/hermes-agent'); sys.argv = ['/opt/venv/bin/hermes']; runpy.run_path('/opt/venv/bin/hermes', run_name='__main__')" \
+    || fail "the installed Hermes runpy launcher is not recognized"
+  for args in \
+    '/usr/bin/python3 /opt/worker.py --task hermes' \
+    '/usr/bin/python3 /opt/hermes-helper.py' \
+    '/usr/bin/python3 /opt/worker.py /opt/venv/bin/hermes' \
+    '/usr/bin/python3 /opt/.hermes/hooks/notify.py'; do
+    if fm_harness_process_matches python3 "$args"; then
+      fail "an unrelated Python process was recognized as Hermes: $args"
+    fi
+  done
+  pass "session-lock: Hermes entry points are recognized without matching unrelated Python arguments"
+}
+
+test_hermes_real_process_acquires_lock() {
+  local dir got
+  dir="$TMP_ROOT/hermes-lock"
+  mkdir -p "$dir/bin" "$dir/state"
+  ln -s /bin/bash "$dir/bin/hermes"
+  got=$(FM_HOME="$dir" "$dir/bin/hermes" -c '"$1/bin/fm-lock.sh"; rc=$?; [ "$rc" -eq 0 ] || exit "$rc"; [ "$(cat "$FM_HOME/state/.lock")" = "$$" ]' _ "$ROOT") \
+    || fail "a real Hermes-named process could not acquire its own session lock"
+  assert_contains "$got" 'lock acquired: harness pid' "Hermes lock acquisition"
+  pass "session-lock e2e: a Hermes-named process acquires the lock with its own PID"
+}
+
+test_hermes_process_identity
+test_hermes_real_process_acquires_lock
 test_version_named_session_is_identified_on_both_platforms
 test_ordinary_paths_are_never_harness_processes
 test_harness_beyond_a_gap_never_owns_the_lock

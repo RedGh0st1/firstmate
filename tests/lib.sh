@@ -26,6 +26,10 @@ if [ -n "${FM_TEST_LIB_SOURCED:-}" ]; then
 fi
 FM_TEST_LIB_SOURCED=1
 
+# Hermes's primary marker outranks other harness markers. Keep the invoking
+# session out of fixtures; a detection test sets its own marker after sourcing.
+unset HERMES_AGENT
+
 # Exempt firstmate's own test suite from the gate-lifecycle refusal
 # (bin/fm-gate-refuse-lib.sh). The no-mistakes gate runs this suite FROM a gate
 # worktree - the exact environment that guard refuses - so without this every
