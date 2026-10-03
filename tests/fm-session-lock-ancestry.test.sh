@@ -365,10 +365,18 @@ test_hermes_process_identity() {
     || fail "the Python Hermes entry point is not recognized"
   fm_harness_process_matches /Users/truncated "/opt/python3 -I -c import sys, runpy; sys.path.insert(0, '/opt/hermes-agent'); sys.argv = ['/opt/venv/bin/hermes']; runpy.run_path('/opt/venv/bin/hermes', run_name='__main__')" \
     || fail "the installed Hermes runpy launcher is not recognized"
+  fm_harness_process_matches python3 '/usr/bin/python3 -X utf8 -W ignore -E /opt/venv/bin/hermes --accept-hooks' \
+    || fail "the Python Hermes entry point behind interpreter options is not recognized"
+  fm_harness_process_matches python3 "/opt/python3 -X utf8 -W ignore -s -I -c import sys, runpy; sys.path.insert(0, '/opt/hermes-agent'); sys.argv = ['/opt/venv/bin/hermes']; runpy.run_path('/opt/venv/bin/hermes', run_name='__main__')" \
+    || fail "the relaunched Hermes runpy launcher with preserved interpreter options is not recognized"
   for args in \
     '/usr/bin/python3 /opt/worker.py --task hermes' \
     '/usr/bin/python3 /opt/hermes-helper.py' \
     '/usr/bin/python3 /opt/worker.py /opt/venv/bin/hermes' \
+    '/usr/bin/python3 -X utf8 /opt/worker.py /opt/venv/bin/hermes' \
+    '/usr/bin/python3 -m /opt/venv/bin/hermes' \
+    "/usr/bin/python3 -X utf8 -c import sys, runpy; runpy.run_path('/opt/venv/bin/hermes', run_name='__main__'); print('extra')" \
+    "/usr/bin/python3 /opt/worker.py -c import sys, runpy; runpy.run_path('/opt/venv/bin/hermes', run_name='__main__')" \
     '/usr/bin/python3 /opt/.hermes/hooks/notify.py'; do
     if fm_harness_process_matches python3 "$args"; then
       fail "an unrelated Python process was recognized as Hermes: $args"
@@ -388,8 +396,74 @@ test_hermes_real_process_acquires_lock() {
   pass "session-lock e2e: a Hermes-named process acquires the lock with its own PID"
 }
 
+# A real Python Hermes process: the entry-point script runs fm-lock.sh as its
+# own child, then reads the lock and its status back against its own pid.
+make_python_hermes_home() {  # <dir>
+  local dir=$1
+  mkdir -p "$dir/venv/bin" "$dir/state"
+  cat > "$dir/venv/bin/hermes" <<'PY'
+import os, subprocess, sys
+root = os.environ["FM_TEST_ROOT"]
+with open(os.environ["FM_HOME"] + "/state/python-pid", "w") as pidfile:
+    pidfile.write(str(os.getpid()))
+acquire = subprocess.run([root + "/bin/fm-lock.sh"], capture_output=True, text=True)
+sys.stdout.write(acquire.stdout + acquire.stderr)
+if acquire.returncode != 0:
+    sys.exit(acquire.returncode)
+with open(os.environ["FM_HOME"] + "/state/.lock") as lock:
+    owner = lock.read().strip()
+if owner != str(os.getpid()):
+    sys.exit("lock owner %s is not this Hermes process %d" % (owner, os.getpid()))
+status = subprocess.run([root + "/bin/fm-lock.sh", "status"], capture_output=True, text=True)
+sys.stdout.write(status.stdout)
+if status.stdout.strip() != "lock: held by live harness pid %d" % os.getpid():
+    sys.exit("lock status does not report this live Hermes process")
+PY
+}
+
+test_python_hermes_console_entry_acquires_lock() {
+  local dir got python
+  python=$(command -v python3) || fail "python3 is required for the Hermes process fixtures"
+  dir="$TMP_ROOT/hermes-python-entry"
+  make_python_hermes_home "$dir"
+  got=$(FM_HOME="$dir" FM_TEST_ROOT="$ROOT" "$python" -X utf8 -W ignore "$dir/venv/bin/hermes" 2>&1) \
+    || fail "a real Python Hermes console entry could not acquire and read back its own lock: $got"
+  assert_contains "$got" 'lock acquired: harness pid' "Python Hermes console-entry lock acquisition"
+  pass "session-lock e2e: a Python Hermes console entry acquires and reads back its own lock"
+}
+
+test_python_hermes_runpy_launcher_acquires_lock() {
+  local dir got python
+  python=$(command -v python3) || fail "python3 is required for the Hermes process fixtures"
+  dir="$TMP_ROOT/hermes-python-runpy"
+  make_python_hermes_home "$dir"
+  got=$(FM_HOME="$dir" FM_TEST_ROOT="$ROOT" "$python" -X utf8 -W ignore -I -c \
+    "import sys, runpy; sys.path.insert(0, '$dir'); sys.argv = ['$dir/venv/bin/hermes']; runpy.run_path('$dir/venv/bin/hermes', run_name='__main__')" 2>&1) \
+    || fail "a real isolated runpy Hermes launcher could not acquire and read back its own lock: $got"
+  assert_contains "$got" 'lock acquired: harness pid' "isolated runpy Hermes lock acquisition"
+  pass "session-lock e2e: an isolated runpy Hermes launcher acquires and reads back its own lock"
+}
+
+test_python_helper_mentioning_hermes_cannot_acquire_lock() {
+  local dir got python
+  python=$(command -v python3) || fail "python3 is required for the Hermes process fixtures"
+  dir="$TMP_ROOT/hermes-python-helper"
+  make_python_hermes_home "$dir"
+  mkdir -p "$dir/.hermes/hooks"
+  cp "$dir/venv/bin/hermes" "$dir/.hermes/hooks/notify.py"
+  if got=$(FM_HOME="$dir" FM_TEST_ROOT="$ROOT" HERMES_AGENT=true "$python" -X utf8 "$dir/.hermes/hooks/notify.py" hermes 2>&1); then
+    fail "a Python helper that only mentions Hermes acquired the session lock: $got"
+  fi
+  [ "$(cat "$dir/state/.lock" 2>/dev/null)" != "$(cat "$dir/state/python-pid")" ] \
+    || fail "a Python helper that only mentions Hermes took the session lock with its own PID"
+  pass "session-lock e2e: a Python helper mentioning Hermes cannot acquire the lock"
+}
+
 test_hermes_process_identity
 test_hermes_real_process_acquires_lock
+test_python_hermes_console_entry_acquires_lock
+test_python_hermes_runpy_launcher_acquires_lock
+test_python_helper_mentioning_hermes_cannot_acquire_lock
 test_version_named_session_is_identified_on_both_platforms
 test_ordinary_paths_are_never_harness_processes
 test_harness_beyond_a_gap_never_owns_the_lock

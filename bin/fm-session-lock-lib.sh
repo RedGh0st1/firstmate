@@ -74,12 +74,15 @@ fm_harness_process_matches() {  # <comm> <args>
   # Hermes is a Python console entry point. Its isolated launcher uses -c and
   # runpy instead of a script argument. Match those entry points structurally,
   # never an arbitrary mention of Hermes in another Python process's arguments.
+  # Interpreter options may precede either entry point; -W and -X take a
+  # separate value, the way Hermes' own relaunch preserves them.
+  local pyopts='((-[WX] [^-[:space:]][^[:space:]]*|-[A-Zabd-ln-z][^[:space:]]*|--[^[:space:]]+) )*'
   case "$(basename -- "$argv0")" in
-    python|python[0-9]*)
-      if printf '%s' "$args" | grep -qE '^[^[:space:]]+[[:space:]]+([^[:space:]]*/)?(bin/hermes|hermes_cli/main\.py)([[:space:]]|$)'; then
+    python|python[0-9]*|Python)
+      if printf '%s' "$args" | grep -qE "^[^[:space:]]+ ${pyopts}([^[:space:]]*/)?(bin/hermes|hermes_cli/main\.py)([[:space:]]|\$)"; then
         return 0
       fi
-      if printf '%s' "$args" | grep -qE "^[^[:space:]]+ (-(I|u|B) )*-c import sys, runpy; .*runpy\.run_path\(['\"][^'\"]*/bin/hermes['\"], run_name=['\"]__main__['\"]\)$"; then
+      if printf '%s' "$args" | grep -qE "^[^[:space:]]+ ${pyopts}-c import sys, runpy; .*runpy\.run_path\(['\"][^'\"]*/bin/hermes['\"], run_name=['\"]__main__['\"]\)\$"; then
         return 0
       fi
       ;;
