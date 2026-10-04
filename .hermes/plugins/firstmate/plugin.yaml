@@ -1,0 +1,3 @@
+name: firstmate
+version: "1.0"
+description: Firstmate watcher supervision and turn-end guard for Hermes primary sessions.
