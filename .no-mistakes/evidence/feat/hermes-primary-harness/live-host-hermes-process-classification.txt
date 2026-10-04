@@ -1,0 +1,40 @@
+reject pid=16268: /Users/lennienurse/.hermes/hermes-agent/venv/bin/python3 /Users/lennienurse/.hermes/hermes-agent/tools/mcp_death_supervisor.py --parent-pgid 15773
+reject pid=30595: tmux new-session -d -s engineer-control-plane-claude -x 140 -y 45 cd /Users/lennienurse/ai-repos/hermes-agent-management-plugin && claude --permission-mode plan
+reject pid=52498: /Users/lennienurse/.hermes/tools/node-26.7.0-darwin-arm64/bin/node src/server.js
+reject pid=52519: /Users/lennienurse/.hermes/tools/python-3.14.7+20260901-darwin-arm64/bin/python3 /Users/lennienurse/.hermes/hermes-agent/tools/mcp_death_supervisor.py --parent-pgid 52470
+reject pid=53987: /Users/lennienurse/.hermes/tools/node-26.7.0-darwin-arm64/bin/node src/server.js
+reject pid=54013: /Users/lennienurse/.hermes/tools/python-3.14.7+20260901-darwin-arm64/bin/python3 /Users/lennienurse/.hermes/hermes-agent/tools/mcp_death_supervisor.py --parent-pgid 53942
+reject pid=58888: /bin/bash -c source /var/folders/xj/yqts3r817lnfhp2_f56l5z980000gn/T/hermes-snap-9bd2869c6f9d.sh >/dev/null 2>&1 || true\012export AI_AGENT="${AI_AGENT:-hermes-agent}" HERMES_AGENT="${HERMES_AGENT:-tr
+reject pid=58889: no-mistakes axi respond --action fix --findings hermes-runpy-no-real-process-e2e,hermes-runpy-interpreter-options --instructions Add real Python console-entry and isolated runpy process end-to-end fix
+reject pid=61053: /Users/lennienurse/.hermes/tools/cua-driver-0.21.0-darwin-arm64/CuaDriver.app/Contents/MacOS/cua-driver mcp --no-overlay
+reject pid=67494: /Users/lennienurse/.hermes/hermes-agent/venv/bin/python3 /Users/lennienurse/.hermes/hermes-agent/tools/mcp_death_supervisor.py --parent-pgid 67095
+reject pid=68744: /bin/zsh -c probe_home=$(mktemp -d /private/tmp/hermes-task1.XXXXXX)\012mkdir -p "$probe_home/plugins"\012ln -s /Users/lennienurse/ai-repos/hermes-agent-management-plugin "$probe_home/plugins/agent-ma
+MATCH pid=68752: /Users/lennienurse/.hermes/hermes-agent/venv/bin/python3 /Users/lennienurse/.hermes/hermes-agent/venv/bin/hermes plugins enable agent-management --no-allow-tool-override
+MATCH pid=69482: /Users/lennienurse/.hermes/hermes-agent/venv/bin/python3 /Users/lennienurse/.hermes/hermes-agent/venv/bin/hermes plugins list --plain
+reject pid=73210: /usr/bin/osascript -l JavaScript -e ObjC.import("stdlib"); const status=$.system("exec /Users/lennienurse/.hermes/hermes-agent/.hermes/bin/hermes --run-module hermes_cli.stderr_timestamp --error-log /
+reject pid=73212: /Users/lennienurse/.hermes/tools/python-3.14.7+20260901-darwin-arm64/bin/python3 -I -c import os, re, sys\012os.environ.pop('PYTHONHOME', None)\012os.environ.pop('PYTHONPATH', None)\012sys.path.insert
+reject pid=73264: /Users/lennienurse/.hermes/tools/python-3.14.7+20260901-darwin-arm64/bin/python3 -I -c import os, re, sys\012os.environ.pop('PYTHONHOME', None)\012os.environ.pop('PYTHONPATH', None)\012sys.path.insert
+reject pid=73337: /Users/lennienurse/.hermes/tools/python-3.14.7+20260901-darwin-arm64/bin/python3 -I -c import sys, runpy; sys.path.insert(0, '/Users/lennienurse/.hermes/hermes-agent'); sys.argv = ['/Users/lennienurse
+reject pid=73622: /usr/local/bin/docker run --rm -i --read-only --tmpfs /tmp:rw,noexec,nosuid,nodev,size=64m --cap-drop ALL --security-opt no-new-privileges --pids-limit 256 tradingview-mcp-hermes:a1e54b0
+reject pid=73623: /Users/lennienurse/.hermes/tools/python-3.14.7+20260901-darwin-arm64/bin/python3 /Users/lennienurse/.hermes/hermes-agent/tools/mcp_death_supervisor.py --parent-pgid 73210
+reject pid=73699: /Users/lennienurse/.hermes/tools/node-26.7.0-darwin-arm64/bin/node src/server.js
+reject pid=73704: /Users/lennienurse/.hermes/tools/python-3.14.7+20260901-darwin-arm64/bin/python3 /Users/lennienurse/.hermes/hermes-agent/tools/mcp_death_supervisor.py --parent-pgid 73402
+reject pid=79102: /Users/lennienurse/.hermes/tools/llamacpp-metal-10964-darwin-arm64/llama-server --host 127.0.0.1 --port 18434 --api-key 96oFtYbRZtekQv4teJpWqq-9fC5iWnNB --models-max 4 --models-autoload --metrics --sl
+reject pid=81422: /Users/lennienurse/.hermes/tools/cua-driver-0.21.0-darwin-arm64/CuaDriver.app/Contents/MacOS/cua-driver serve --cua-internal-gate-engaged --cua-internal-gate-missing-accessibility --cua-internal-gate-
+reject pid=82000: /Users/lennienurse/.hermes/tools/python-3.14.7+20260901-darwin-arm64/bin/python3 /Users/lennienurse/.hermes/hermes-agent/tools/mcp_death_supervisor.py --parent-pgid 73337
+reject pid=82048: /usr/local/bin/docker run --rm -i --read-only --tmpfs /tmp:rw,noexec,nosuid,nodev,size=64m --cap-drop ALL --security-opt no-new-privileges --pids-limit 256 tradingview-mcp-hermes:a1e54b0
+reject pid=82573: /Users/lennienurse/.hermes/tools/python-3.14.7+20260901-darwin-arm64/bin/python3 /var/folders/xj/yqts3r817lnfhp2_f56l5z980000gn/T/hermes_kernel_fzbt2at1/hermes_kernel_runner.py
+reject pid=83436: /Users/lennienurse/.hermes/tools/node-26.7.0-darwin-arm64/bin/node src/server.js
+reject pid=83444: /Users/lennienurse/.hermes/tools/python-3.14.7+20260901-darwin-arm64/bin/python3 /Users/lennienurse/.hermes/hermes-agent/tools/mcp_death_supervisor.py --parent-pgid 83398
+reject pid=85862: /bin/zsh -c source /Users/lennienurse/.claude/shell-snapshots/snapshot-zsh-1791072058032-h9ybcv.sh 2>/dev/null || true && setopt NO_EXTENDED_GLOB NO_BARE_GLOB_QUAL 2>/dev/null || true && { \builtin un
+reject pid=85864: bash -c . bin/fm-session-lock-lib.sh; ps -ww -axo pid=,comm= | while read pid comm; do args=$(ps -ww -o args= -p $pid 2>/dev/null | head -1); case "$args" in *hermes*) if fm_harness_process_matches "$
+reject pid=85865: tee /Users/lennienurse/.no-mistakes/evidence/01M4232CAEVNZKSFGMK3SC1E65/live-host-hermes-process-classification.txt
+reject pid=85866: /bin/zsh -c source /Users/lennienurse/.claude/shell-snapshots/snapshot-zsh-1791072058032-h9ybcv.sh 2>/dev/null || true && setopt NO_EXTENDED_GLOB NO_BARE_GLOB_QUAL 2>/dev/null || true && { \builtin un
+reject pid=85872: bash -c . bin/fm-session-lock-lib.sh; ps -ww -axo pid=,comm= | while read pid comm; do args=$(ps -ww -o args= -p $pid 2>/dev/null | head -1); case "$args" in *hermes*) if fm_harness_process_matches "$
+reject pid=92185: node /Users/lennienurse/.hermes/lsp/bin/bash-language-server start
+MATCH pid=67095: /Users/lennienurse/.hermes/hermes-agent/venv/bin/python3 /Users/lennienurse/.hermes/hermes-agent/venv/bin/hermes
+MATCH pid=83398: /Users/lennienurse/.hermes/tools/python-3.14.7+20260901-darwin-arm64/bin/python3 -I -c import sys, runpy; sys.path.insert(0, '/Users/lennienurse/.hermes/hermes-agent'); sys.argv = ['/Users/lennienurse
+MATCH pid=73402: /Users/lennienurse/.hermes/tools/python-3.14.7+20260901-darwin-arm64/bin/python3 -I -c import sys, runpy; sys.path.insert(0, '/Users/lennienurse/.hermes/hermes-agent'); sys.argv = ['/Users/lennienurse
+MATCH pid=52470: /Users/lennienurse/.hermes/tools/python-3.14.7+20260901-darwin-arm64/bin/python3 -I -c import sys, runpy; sys.path.insert(0, '/Users/lennienurse/.hermes/hermes-agent'); sys.argv = ['/Users/lennienurse
+MATCH pid=15773: /Users/lennienurse/.hermes/hermes-agent/venv/bin/python3 /Users/lennienurse/.hermes/hermes-agent/venv/bin/hermes
+MATCH pid=53942: /Users/lennienurse/.hermes/tools/python-3.14.7+20260901-darwin-arm64/bin/python3 -I -c import sys, runpy; sys.path.insert(0, '/Users/lennienurse/.hermes/hermes-agent'); sys.argv = ['/Users/lennienurse

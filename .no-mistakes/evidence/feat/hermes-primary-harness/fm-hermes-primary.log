@@ -1,0 +1,6 @@
+ok - fm-harness detects HERMES_AGENT=true as hermes
+ok - fm-harness prefers HERMES_AGENT over an inherited foreign primary marker
+ok - control table exposes Hermes lifecycle operations
+ok - test fixtures clear inherited Hermes identity while allowing explicit marker tests
+ok - Hermes project plugin compiles
+ok - Hermes plugin injects exactly one bounded follow-up per stream on a guard lapse
